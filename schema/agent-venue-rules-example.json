@@ -1,0 +1,39 @@
+{
+  "schema_version": "0.1",
+  "venue_name": "The Golden Fork",
+  "venue_url": "https://www.thegoldenfork.com",
+  "last_updated": "2026-03-06",
+  "effective_at": "2026-03-06",
+
+  "default_policy": "deny_if_unspecified",
+
+  "disclosure_required": {
+    "enabled": true,
+    "phrasing": "You must identify yourself as an AI agent before making any request."
+  },
+
+  "allowed_channels": ["phone", "web"],
+
+  "max_attempts_per_agent": {
+    "action": "booking_request",
+    "limit": 3,
+    "window_unit": "hour",
+    "window_value": 1
+  },
+
+  "human_escalation_required": {
+    "party_size_auto_max": 6,
+    "conditions": [
+      "special_event_booking",
+      "complaint_or_dispute"
+    ]
+  },
+
+  "third_party_restrictions": {
+    "no_resale": true,
+    "no_transfer": true,
+    "identity_bound_booking": true
+  },
+
+  "complaint_endpoint": "https://www.thegoldenfork.com/report-agent"
+}
