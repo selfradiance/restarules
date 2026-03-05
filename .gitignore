@@ -145,3 +145,8 @@ vite.config.ts.timestamp-*
 
 # Private project context files
 RESTARULES_PROJECT_CONTEXT.md
+AGENT_OPERATING_CONTRACT.md
+process-template-v2.md
+
+# macOS
+.DS_Store
