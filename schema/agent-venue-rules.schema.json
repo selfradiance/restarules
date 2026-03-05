@@ -69,7 +69,7 @@
       "description": "Communication channels the venue permits AI agents to use.",
       "items": {
         "type": "string",
-        "enum": ["phone", "web", "sms", "email"]
+        "enum": ["phone", "web", "sms", "email", "app"]
       },
       "minItems": 1,
       "uniqueItems": true
