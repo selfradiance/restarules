@@ -1,0 +1,25 @@
+{
+  "name": "restarules",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test/validate-schema.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/selfradiance/restarules.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/selfradiance/restarules/issues"
+  },
+  "homepage": "https://github.com/selfradiance/restarules#readme",
+  "devDependencies": {
+    "ajv": "^8.18.0",
+    "ajv-formats": "^3.0.1"
+  }
+}
