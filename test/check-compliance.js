@@ -74,4 +74,164 @@ try {
   process.exit(1);
 }
 
+// Test 4: ALLOW — rate limit not exceeded (2 attempts, limit is 3)
+try {
+  const output = run("--channel phone --disclosed true --action booking_request --attempt-count 2");
+  if (output.includes("ALLOW")) {
+    console.log(
+      "PASS: Agent within rate limit gets ALLOW"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected ALLOW for agent within rate limit"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on rate limit ALLOW test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
+// Test 5: DENY — rate limit exceeded (3 attempts, limit is 3)
+try {
+  const output = run("--channel phone --disclosed true --action booking_request --attempt-count 3");
+  if (output.includes("DENY") && output.includes("Rate limit exceeded")) {
+    console.log(
+      "PASS: Agent exceeding rate limit gets DENY with rate limit reason"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected DENY with rate limit reason for exceeded attempt count"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on rate limit DENY test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
+// Test 6: ALLOW — party size within auto-max (5, max is 6)
+try {
+  const output = run("--channel phone --disclosed true --party-size 5");
+  if (output.includes("ALLOW")) {
+    console.log(
+      "PASS: Party size within auto-max gets ALLOW"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected ALLOW for party size within auto-max"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on party size ALLOW test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
+// Test 7: DENY — party size exceeds auto-max (8, max is 6)
+try {
+  const output = run("--channel phone --disclosed true --party-size 8");
+  if (output.includes("DENY") && output.includes("party_size_auto_max")) {
+    console.log(
+      "PASS: Party size exceeding auto-max gets DENY with escalation reason"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected DENY with escalation reason for oversized party"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on party size DENY test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
+// Test 8: DENY — escalation condition triggered
+try {
+  const output = run("--channel phone --disclosed true --escalation-condition special_event_booking");
+  if (output.includes("DENY") && output.includes("human handoff")) {
+    console.log(
+      "PASS: Triggered escalation condition gets DENY with handoff reason"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected DENY with handoff reason for escalation condition"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on escalation condition DENY test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
+// Test 9: DENY — agent acting as third party (all restrictions enabled in example)
+try {
+  const output = run("--channel phone --disclosed true --third-party true");
+  if (output.includes("DENY") && output.includes("Third-party action denied")) {
+    console.log(
+      "PASS: Third-party agent gets DENY with restriction reason"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected DENY with restriction reason for third-party agent"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on third-party DENY test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
+// Test 10: ALLOW — agent not acting as third party
+try {
+  const output = run("--channel phone --disclosed true --third-party false");
+  if (output.includes("ALLOW")) {
+    console.log(
+      "PASS: Non-third-party agent gets ALLOW"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected ALLOW for non-third-party agent"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on third-party ALLOW test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
+// Test 11: complaint_endpoint surfaced in output when present
+try {
+  const output = run("--channel phone --disclosed true");
+  if (output.includes("complaint_endpoint")) {
+    console.log(
+      "PASS: Complaint endpoint is surfaced in output when present"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected complaint_endpoint to appear in output"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on complaint_endpoint test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
 console.log("\nAll compliance checker tests passed.");

@@ -1,16 +1,23 @@
 #!/usr/bin/env node
 
 /**
- * RestaRules Compliance Checker (v0.0)
+ * RestaRules Compliance Checker (v0.1)
  *
  * Evaluates a proposed agent action against a venue's rules file.
- * Currently checks:
+ * Checks:
  *   1. Schema validation (is the rules file valid?)
  *   2. disclosure_required (has the agent disclosed it is AI?)
  *   3. allowed_channels (is the intended channel permitted?)
+ *   4. rate_limits (has the agent exceeded the attempt limit for this action?)
+ *   5. human_escalation_required (does this request require a human?)
+ *   6. third_party_restrictions (is the agent acting for a third party?)
+ *   7. complaint_endpoint (informational: where to report misbehavior)
  *
  * Usage:
  *   node cli/check.js --rules <path> --channel <channel> --disclosed <true|false>
+ *                     [--action <action>] [--attempt-count <n>]
+ *                     [--party-size <n>] [--escalation-condition <condition>]
+ *                     [--third-party <true|false>]
  *
  * Example:
  *   node cli/check.js --rules schema/agent-venue-rules-example.json --channel phone --disclosed true
@@ -112,6 +119,80 @@ if (rules.allowed_channels) {
   );
 }
 
+// Check 3: rate_limits (Decision Procedure step 4)
+if (rules.rate_limits) {
+  if (args.action !== undefined && args["attempt-count"] !== undefined) {
+    const action = args.action;
+    const attemptCount = parseInt(args["attempt-count"], 10);
+    const matchingLimits = rules.rate_limits.filter((r) => r.action === action);
+    for (const limit of matchingLimits) {
+      if (attemptCount >= limit.limit) {
+        reasons.push(
+          `Rate limit exceeded for "${action}": ${attemptCount} attempts >= limit of ${limit.limit} per ${limit.window_value} ${limit.window_unit}`
+        );
+      }
+    }
+  }
+} else if (rules.default_policy === "deny_if_unspecified" && args.action !== undefined) {
+  reasons.push("rate_limits is absent and default_policy is deny_if_unspecified");
+}
+
+// Check 4: human_escalation_required (Decision Procedure step 5)
+if (rules.human_escalation_required) {
+  if (args["party-size"] !== undefined) {
+    const partySize = parseInt(args["party-size"], 10);
+    if (partySize > rules.human_escalation_required.party_size_auto_max) {
+      reasons.push(
+        `Party size ${partySize} exceeds party_size_auto_max of ${rules.human_escalation_required.party_size_auto_max} — human escalation required`
+      );
+    }
+  }
+  if (args["escalation-condition"] !== undefined) {
+    const cond = args["escalation-condition"];
+    if (rules.human_escalation_required.conditions.includes(cond)) {
+      reasons.push(`Escalation condition "${cond}" requires human handoff`);
+    }
+  }
+} else if (
+  rules.default_policy === "deny_if_unspecified" &&
+  (args["party-size"] !== undefined || args["escalation-condition"] !== undefined)
+) {
+  reasons.push(
+    "human_escalation_required is absent and default_policy is deny_if_unspecified"
+  );
+}
+
+// Check 5: third_party_restrictions (Decision Procedure step 6)
+if (rules.third_party_restrictions) {
+  if (args["third-party"] === "true") {
+    const r = rules.third_party_restrictions;
+    if (r.no_resale || r.no_transfer || r.identity_bound_booking) {
+      const active = [];
+      if (r.no_resale) active.push("no_resale");
+      if (r.no_transfer) active.push("no_transfer");
+      if (r.identity_bound_booking) active.push("identity_bound_booking");
+      reasons.push(
+        `Third-party action denied — restrictions apply: ${active.join(", ")}`
+      );
+    }
+  }
+} else if (
+  rules.default_policy === "deny_if_unspecified" &&
+  args["third-party"] === "true"
+) {
+  reasons.push(
+    "third_party_restrictions is absent and default_policy is deny_if_unspecified"
+  );
+}
+
+// Check 6: complaint_endpoint (Decision Procedure step 7 — informational)
+// Absence with deny_if_unspecified is noted; presence is surfaced in output.
+if (!rules.complaint_endpoint && rules.default_policy === "deny_if_unspecified") {
+  reasons.push(
+    "complaint_endpoint is absent and default_policy is deny_if_unspecified"
+  );
+}
+
 // --- Output result ---
 
 if (reasons.length === 0) {
@@ -122,4 +203,8 @@ if (reasons.length === 0) {
   console.log("DENY");
   console.log("reasons:");
   reasons.forEach((r) => console.log(`  - ${r}`));
+}
+
+if (rules.complaint_endpoint) {
+  console.log(`complaint_endpoint: ${rules.complaint_endpoint}`);
 }
