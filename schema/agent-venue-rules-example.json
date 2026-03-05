@@ -14,12 +14,14 @@
 
   "allowed_channels": ["phone", "web"],
 
-  "max_attempts_per_agent": {
-    "action": "booking_request",
-    "limit": 3,
-    "window_unit": "hour",
-    "window_value": 1
-  },
+  "rate_limits": [
+    {
+      "action": "booking_request",
+      "limit": 3,
+      "window_unit": "hour",
+      "window_value": 1
+    }
+  ],
 
   "human_escalation_required": {
     "party_size_auto_max": 6,
