@@ -15,6 +15,30 @@ Every rules file includes a `default_policy` field set to either `"deny_if_unspe
 - `"deny_if_unspecified"` — If a rule isn't explicitly included, assume the action is not permitted. This is the conservative default. Most restaurants should use this.
 - `"allow_if_unspecified"` — If a rule isn't explicitly included, assume the action is permitted.
 
+**Example — strict venue (deny_if_unspecified):**
+
+```json
+{
+  "default_policy": "deny_if_unspecified",
+  "disclosure_required": { "enabled": true, "phrasing": "I am an AI assistant." },
+  "allowed_channels": ["phone"]
+}
+```
+
+In this file, `rate_limits`, `human_escalation_required`, `third_party_restrictions`, and `complaint_endpoint` are all omitted. Because `default_policy` is `"deny_if_unspecified"`, an agent must treat all of those missing rules as denials.
+
+**Example — permissive venue (allow_if_unspecified):**
+
+```json
+{
+  "default_policy": "allow_if_unspecified",
+  "disclosure_required": { "enabled": false },
+  "allowed_channels": ["phone", "web", "app"]
+}
+```
+
+Here the same four fields are omitted, but `default_policy` is `"allow_if_unspecified"`, so an agent treats the missing rules as permitted.
+
 `default_policy` applies only to optional properties defined in this schema version that are omitted entirely. In v0.1, the four optional fields are: `rate_limits`, `human_escalation_required`, `third_party_restrictions`, and `complaint_endpoint`. All other fields are required and must always be present. `default_policy` does not override fields that are present, and it does not apply to invalid or malformed values (which should always be treated as an error).
 
 ## Decision Procedure for Agents
