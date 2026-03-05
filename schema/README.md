@@ -9,7 +9,7 @@ This folder contains the formal schema definition and an example file for RestaR
 
 ## Required vs Optional Fields
 
-A valid rules file **must** include these 6 fields:
+A valid rules file **must** include these 8 fields:
 
 - `schema_version` — Must be `"0.1"` for this version
 - `venue_name` — The restaurant's name
@@ -17,8 +17,17 @@ A valid rules file **must** include these 6 fields:
 - `last_updated` — When the file was last edited (YYYY-MM-DD)
 - `effective_at` — When the rules take effect (YYYY-MM-DD)
 - `default_policy` — Either `"deny_if_unspecified"` or `"allow_if_unspecified"`
+- `disclosure_required` — Whether AI agents must identify themselves before interacting
+- `allowed_channels` — Which communication channels the venue permits agents to use
 
-The remaining 6 fields are **optional**. A venue includes only the rules it wants to set. The `default_policy` field tells agents what to assume for everything not explicitly covered.
+The remaining 4 fields are **optional**:
+
+- `rate_limits` — How frequently a single agent may perform specific actions
+- `human_escalation_required` — Party size threshold and conditions requiring human handoff
+- `third_party_restrictions` — Rules on resale, transfer, and identity-bound bookings
+- `complaint_endpoint` — URL for reporting agent misbehavior to the venue
+
+A venue includes only the optional rules it wants to set. The `default_policy` field tells agents what to assume for everything not explicitly covered.
 
 ## How to Validate
 
