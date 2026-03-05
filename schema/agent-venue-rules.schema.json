@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://restarules.org/schema/agent-venue-rules/v0.1",
+  "title": "RestaRules Agent Venue Rules",
+  "description": "A machine-readable file that defines how AI agents are permitted to interact with a restaurant venue. Published at /.well-known/agent-venue-rules.json. Schema version 0.1.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "venue_name",
+    "venue_url",
+    "last_updated",
+    "effective_at",
+    "default_policy"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "The version of the RestaRules schema this file conforms to.",
+      "const": "0.1"
+    },
+    "venue_name": {
+      "type": "string",
+      "description": "The human-readable name of the restaurant or venue.",
+      "minLength": 1
+    },
+    "venue_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "The primary website URL of the venue."
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date",
+      "description": "The date this rules file was last edited, in YYYY-MM-DD format."
+    },
+    "effective_at": {
+      "type": "string",
+      "format": "date",
+      "description": "The date these rules take effect, in YYYY-MM-DD format. May differ from last_updated if rules are published in advance."
+    },
+    "default_policy": {
+      "type": "string",
+      "enum": ["deny_if_unspecified", "allow_if_unspecified"],
+      "description": "What an agent should assume for any field or behavior not explicitly covered by this file. 'deny_if_unspecified' means the agent must not proceed unless the rules explicitly allow it. 'allow_if_unspecified' means the agent may proceed unless the rules explicitly forbid it."
+    },
+    "disclosure_required": {
+      "type": "object",
+      "description": "Whether AI agents must identify themselves as non-human before interacting with the venue.",
+      "required": ["enabled"],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "If true, the agent must disclose that it is an AI before making any request."
+        },
+        "phrasing": {
+          "type": "string",
+          "description": "Optional suggested phrasing the venue prefers for AI disclosure. Agents are not required to use this exact text but should convey the same meaning."
+        }
+      }
+    },
+    "allowed_channels": {
+      "type": "array",
+      "description": "The communication channels through which AI agents are permitted to interact with this venue.",
+      "items": {
+        "type": "string",
+        "enum": ["phone", "web", "sms", "email"]
+      },
+      "uniqueItems": true,
+      "minItems": 1
+    },
+    "max_attempts_per_agent": {
+      "type": "object",
+      "description": "Rate limit on how frequently a single agent may perform a specific action at this venue.",
+      "required": ["action", "limit", "window_unit", "window_value"],
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "description": "The type of action this rate limit applies to.",
+          "enum": ["booking_request", "cancellation_request", "inquiry", "complaint"]
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of attempts allowed within the time window.",
+          "minimum": 1
+        },
+        "window_unit": {
+          "type": "string",
+          "description": "The unit of time for the rate limit window.",
+          "enum": ["minute", "hour", "day"]
+        },
+        "window_value": {
+          "type": "integer",
+          "description": "The number of window_units that define the rate limit period. For example, window_unit 'hour' with window_value 1 means 'per 1 hour'.",
+          "minimum": 1
+        }
+      }
+    },
+    "human_escalation_required": {
+      "type": "object",
+      "description": "Conditions under which the agent must hand off to a human rather than proceeding autonomously.",
+      "required": ["party_size_auto_max", "conditions"],
+      "additionalProperties": false,
+      "properties": {
+        "party_size_auto_max": {
+          "type": "integer",
+          "description": "The maximum party size an agent may book autonomously. Parties larger than this number require human escalation.",
+          "minimum": 1
+        },
+        "conditions": {
+          "type": "array",
+          "description": "Named conditions that always require human escalation, regardless of party size.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "special_event_booking",
+              "complaint_or_dispute",
+              "accessibility_request",
+              "dietary_emergency",
+              "reservation_modification"
+            ]
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "third_party_restrictions": {
+      "type": "object",
+      "description": "Rules governing whether bookings made by agents can be resold, transferred, or used by someone other than the original booker.",
+      "required": ["no_resale", "no_transfer", "identity_bound_booking"],
+      "additionalProperties": false,
+      "properties": {
+        "no_resale": {
+          "type": "boolean",
+          "description": "If true, reservations made through this venue may not be listed for sale or sold to third parties."
+        },
+        "no_transfer": {
+          "type": "boolean",
+          "description": "If true, reservations may not be transferred to a different person after booking."
+        },
+        "identity_bound_booking": {
+          "type": "boolean",
+          "description": "If true, the reservation is bound to the identity of the person on whose behalf it was made. The venue may verify identity at arrival."
+        }
+      }
+    },
+    "complaint_endpoint": {
+      "type": "string",
+      "format": "uri",
+      "description": "A URL where agent misbehavior can be reported to the venue. Agents or their operators should use this endpoint to file complaints about other agents or to report issues."
+    }
+  }
+}
