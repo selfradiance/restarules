@@ -51,6 +51,31 @@ npm test
 PASS: Example validates against schema.
 ```
 
+## Security Considerations
+
+RestaRules v0.1 is a conduct standard, not a security product. However, implementers consuming `agent-venue-rules.json` files should be aware of the following:
+
+### Complaint Endpoint Handling
+
+The `complaint_endpoint` field contains a URL supplied by the venue. Agents and consuming systems MUST treat this URL as untrusted input:
+
+- Only follow HTTPS URLs. Reject plain HTTP complaint endpoints.
+- Do NOT follow redirects to private IP space (RFC 1918: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), link-local addresses (`169.254.0.0/16`), or localhost (`127.0.0.0/8`).
+- Do NOT follow redirects that change the scheme from HTTPS to HTTP.
+- Set a reasonable timeout on complaint submissions to avoid denial-of-service via slow endpoints.
+
+These precautions mitigate Server-Side Request Forgery (SSRF) risks where a malicious rules file could direct an agent to probe internal networks.
+
+### Rate Limit Identity Semantics
+
+Rate limits in v0.1 are advisory. The schema defines rate limit rules (action type, count, time window) but does NOT define what constitutes an "agent" for counting purposes. Implementers should:
+
+- If the agent declares an identity (e.g., via a User-Agent header or agent ID field), enforce rate limits per declared identity.
+- If no agent identity is available, fall back to enforcement per source (IP address, phone number, or session).
+- Be aware that agents can rotate identifiers. Rate limits in v0.1 are a signal of venue intent, not a cryptographic enforcement mechanism.
+
+Full identity semantics are planned for v0.2.
+
 ## Status
 
 RestaRules is in early development (v0.1). The schema covers disclosure, channels, rate limits, escalation, and third-party restrictions. Deposit policies, cancellation policies, and no-show policies are planned for v0.2.
