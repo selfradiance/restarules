@@ -2,8 +2,8 @@
   "schema_version": "0.1",
   "venue_name": "The Golden Fork",
   "venue_url": "https://www.thegoldenfork.com",
-  "last_updated": "2026-03-06",
-  "effective_at": "2026-03-06",
+  "last_updated": "2026-03-05",
+  "effective_at": "2026-03-05",
 
   "default_policy": "deny_if_unspecified",
 
