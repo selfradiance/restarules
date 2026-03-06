@@ -30,7 +30,7 @@
       "type": "string",
       "description": "The restaurant's primary website URL.",
       "format": "uri",
-      "pattern": "^https?://"
+      "pattern": "^https://"
     },
     "last_updated": {
       "type": "string",
@@ -158,7 +158,7 @@
       "type": "string",
       "description": "URL where agent misbehavior can be reported to the venue.",
       "format": "uri",
-      "pattern": "^https?://"
+      "pattern": "^https://"
     }
   }
 }
