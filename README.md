@@ -77,6 +77,30 @@ npm test
 PASS: Example validates against schema.
 ```
 
+## Reference Agent Demo
+
+`reference-agent/agent.js` is a command-line tool that proves the core thesis: an agent can fetch a venue's rules file, validate it against the schema, and change its behavior accordingly — before taking any action.
+
+```bash
+# Fetch and display rules
+node reference-agent/agent.js https://selfradiance.github.io/restarules/.well-known/agent-venue-rules.json
+
+# Check a specific action against the rules
+node reference-agent/agent.js https://selfradiance.github.io/restarules/.well-known/agent-venue-rules.json \
+  --channel phone --party-size 8 --action booking_request --attempts 1
+```
+
+Available flags:
+
+| Flag | Description |
+|---|---|
+| `--channel` | Channel the agent wants to use (e.g., `phone`, `web`, `sms`) |
+| `--party-size` | Number of guests — compared against `party_size_auto_max` |
+| `--action` | Action type for rate limit check (e.g., `booking_request`) |
+| `--attempts` | Number of prior attempts — compared against the rate limit |
+
+The agent respects `default_policy`: if a rule isn't defined in the venue's file, the agent treats it as denied (`deny_if_unspecified`) or allowed (`allow_if_unspecified`) based on the venue's declared policy.
+
 ## Security Considerations
 
 RestaRules v0.1 is a conduct standard, not a security product. However, implementers consuming `agent-venue-rules.json` files should be aware of the following:
