@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node test/validate-schema.js && node test/check-compliance.js"
+    "test": "node test/validate-schema.js && node test/check-compliance.js && node test/reference-agent.js"
   },
   "repository": {
     "type": "git",

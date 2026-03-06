@@ -3,6 +3,7 @@
 const path = require("path");
 const Ajv = require("ajv/dist/2020");
 const addFormats = require("ajv-formats");
+const { evaluateCompliance } = require("./decisions");
 
 const schema = require(path.resolve(__dirname, "..", "schema", "agent-venue-rules.schema.json"));
 
@@ -76,19 +77,17 @@ const hasFlags = channel || partySize !== null || action || attempts !== null;
     return;
   }
 
-  // --- Compliance Report ---
-  const dp = rules.default_policy;
+  const report = evaluateCompliance(rules, { channel, partySize, action, attempts });
 
   console.log("--- Compliance Report ---\n");
   console.log(`Venue: ${rules.venue_name}`);
-  console.log(`Default policy: ${dp}\n`);
+  console.log(`Default policy: ${rules.default_policy}\n`);
 
   // 1. Disclosure
-  const disc = rules.disclosure_required;
-  if (disc.enabled) {
+  if (report.disclosure.required) {
     console.log(`1. Disclosure required: YES`);
-    if (disc.phrasing) {
-      console.log(`   Phrasing: "${disc.phrasing}"`);
+    if (report.disclosure.phrasing) {
+      console.log(`   Phrasing: "${report.disclosure.phrasing}"`);
     }
   } else {
     console.log(`1. Disclosure required: NO`);
@@ -97,51 +96,43 @@ const hasFlags = channel || partySize !== null || action || attempts !== null;
 
   // 2. Channel check
   if (channel) {
-    if (rules.allowed_channels) {
-      if (rules.allowed_channels.includes(channel)) {
-        console.log(`2. Channel check (${channel}): ALLOWED`);
-      } else {
-        console.log(`2. Channel check (${channel}): DENIED — not in allowed channels`);
-        console.log(`   Allowed: ${rules.allowed_channels.join(", ")}`);
-      }
+    if (report.channel.result === "ALLOWED") {
+      console.log(`2. Channel check (${channel}): ALLOWED`);
     } else {
-      const decision = dp === "allow_if_unspecified" ? "ALLOWED" : "DENIED";
-      console.log(`2. Channel check (${channel}): ${decision} — allowed_channels not defined, applying default_policy`);
+      console.log(`2. Channel check (${channel}): DENIED — not in allowed channels`);
+      console.log(`   Allowed: ${report.channel.allowedChannels.join(", ")}`);
     }
   } else {
     console.log(`2. Channel check: (no channel provided)`);
-    console.log(`   Allowed channels: ${rules.allowed_channels ? rules.allowed_channels.join(", ") : "not defined"}`);
+    console.log(`   Allowed channels: ${report.channel.allowedChannels ? report.channel.allowedChannels.join(", ") : "not defined"}`);
   }
   console.log();
 
   // 3. Party size
   if (partySize !== null) {
-    if (rules.human_escalation_required) {
-      const autoMax = rules.human_escalation_required.party_size_auto_max;
-      const conditions = rules.human_escalation_required.conditions;
+    if (report.partySize.result === "ESCALATE_TO_HUMAN") {
       console.log(`3. Party size check (${partySize}):`);
-      console.log(`   Auto-max: ${autoMax}`);
-      if (partySize > autoMax) {
-        console.log(`   Result: ESCALATE TO HUMAN`);
-      } else {
-        console.log(`   Result: ALLOWED — no escalation needed`);
-      }
-      if (conditions && conditions.length > 0) {
-        console.log(`   Escalation conditions also defined: ${conditions.join(", ")}`);
-      }
+      console.log(`   Auto-max: ${report.partySize.autoMax}`);
+      console.log(`   Result: ESCALATE TO HUMAN`);
+    } else if (report.partySize.result === "ALLOWED") {
+      console.log(`3. Party size check (${partySize}):`);
+      console.log(`   Auto-max: ${report.partySize.autoMax}`);
+      console.log(`   Result: ALLOWED — no escalation needed`);
     } else {
-      const decision = dp === "allow_if_unspecified" ? "ALLOWED" : "DENIED";
-      console.log(`3. Party size check (${partySize}): ${decision} — human_escalation_required not defined, applying default_policy`);
+      console.log(`3. Party size check (${partySize}): ${report.partySize.result} — human_escalation_required not defined, applying default_policy`);
+    }
+    if (report.partySize.conditions && report.partySize.conditions.length > 0) {
+      console.log(`   Escalation conditions also defined: ${report.partySize.conditions.join(", ")}`);
     }
   } else {
-    if (rules.human_escalation_required) {
+    if (report.partySize.autoMax !== null) {
       console.log(`3. Party size check: (no party size provided)`);
-      console.log(`   Auto-max: ${rules.human_escalation_required.party_size_auto_max}`);
-      if (rules.human_escalation_required.conditions.length > 0) {
-        console.log(`   Escalation conditions: ${rules.human_escalation_required.conditions.join(", ")}`);
+      console.log(`   Auto-max: ${report.partySize.autoMax}`);
+      if (report.partySize.conditions.length > 0) {
+        console.log(`   Escalation conditions: ${report.partySize.conditions.join(", ")}`);
       }
     } else {
-      const fallback = dp === "allow_if_unspecified" ? "allow" : "deny";
+      const fallback = rules.default_policy === "allow_if_unspecified" ? "allow" : "deny";
       console.log(`3. Party size check: human_escalation_required not defined — default_policy will ${fallback}`);
     }
   }
@@ -149,23 +140,18 @@ const hasFlags = channel || partySize !== null || action || attempts !== null;
 
   // 4. Rate limits
   if (action && attempts !== null) {
-    if (rules.rate_limits) {
-      const match = rules.rate_limits.find((r) => r.action === action);
-      if (match) {
-        console.log(`4. Rate limit check (${action}, attempt ${attempts}):`);
-        console.log(`   Limit: ${match.limit} per ${match.window_value} ${match.window_unit}`);
-        if (attempts >= match.limit) {
-          console.log(`   Result: EXCEEDED`);
-        } else {
-          console.log(`   Result: WITHIN LIMITS`);
-        }
-      } else {
-        const decision = dp === "allow_if_unspecified" ? "WITHIN LIMITS" : "DENIED";
-        console.log(`4. Rate limit check (${action}, attempt ${attempts}): ${decision} — no rule defined for this action, applying default_policy`);
-      }
+    if (report.rateLimit.result === "WITHIN_LIMITS") {
+      console.log(`4. Rate limit check (${action}, attempt ${attempts}):`);
+      console.log(`   Limit: ${report.rateLimit.limit} per ${report.rateLimit.windowValue} ${report.rateLimit.windowUnit}`);
+      console.log(`   Result: WITHIN LIMITS`);
+    } else if (report.rateLimit.result === "EXCEEDED") {
+      console.log(`4. Rate limit check (${action}, attempt ${attempts}):`);
+      console.log(`   Limit: ${report.rateLimit.limit} per ${report.rateLimit.windowValue} ${report.rateLimit.windowUnit}`);
+      console.log(`   Result: EXCEEDED`);
     } else {
-      const decision = dp === "allow_if_unspecified" ? "WITHIN LIMITS" : "DENIED";
-      console.log(`4. Rate limit check (${action}, attempt ${attempts}): ${decision} — rate_limits not defined, applying default_policy`);
+      const label = report.rateLimit.result === "WITHIN_LIMITS_DEFAULT_POLICY" ? "WITHIN LIMITS" : "DENIED";
+      const reason = rules.rate_limits ? "no rule defined for this action" : "rate_limits not defined";
+      console.log(`4. Rate limit check (${action}, attempt ${attempts}): ${label} — ${reason}, applying default_policy`);
     }
   } else {
     if (rules.rate_limits) {
@@ -174,28 +160,27 @@ const hasFlags = channel || partySize !== null || action || attempts !== null;
         console.log(`   - ${r.action}: max ${r.limit} per ${r.window_value} ${r.window_unit}`);
       }
     } else {
-      const fallback = dp === "allow_if_unspecified" ? "allow" : "deny";
+      const fallback = rules.default_policy === "allow_if_unspecified" ? "allow" : "deny";
       console.log(`4. Rate limits: not defined — default_policy will ${fallback}`);
     }
   }
   console.log();
 
   // 5. Third-party restrictions
-  if (rules.third_party_restrictions) {
-    const tpr = rules.third_party_restrictions;
+  if (report.thirdParty.defined) {
     console.log(`5. Third-party restrictions:`);
-    console.log(`   No resale: ${tpr.no_resale}`);
-    console.log(`   No transfer: ${tpr.no_transfer}`);
-    console.log(`   Identity-bound booking: ${tpr.identity_bound_booking}`);
+    console.log(`   No resale: ${report.thirdParty.noResale}`);
+    console.log(`   No transfer: ${report.thirdParty.noTransfer}`);
+    console.log(`   Identity-bound booking: ${report.thirdParty.identityBound}`);
   } else {
-    const fallback = dp === "allow_if_unspecified" ? "no restrictions apply" : "all third-party actions denied";
+    const fallback = report.thirdParty.defaultPolicyResult === "ALLOWED" ? "no restrictions apply" : "all third-party actions denied";
     console.log(`5. Third-party restrictions: not defined — default_policy: ${fallback}`);
   }
   console.log();
 
   // 6. Complaint endpoint
-  if (rules.complaint_endpoint) {
-    console.log(`6. Complaint endpoint: ${rules.complaint_endpoint}`);
+  if (report.complaintEndpoint) {
+    console.log(`6. Complaint endpoint: ${report.complaintEndpoint}`);
   } else {
     console.log(`6. Complaint endpoint: not defined`);
   }
