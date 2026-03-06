@@ -11,7 +11,7 @@
  *   4. rate_limits (has the agent exceeded the attempt limit for this action?)
  *   5. human_escalation_required (does this request require a human?)
  *   6. third_party_restrictions (is the agent acting for a third party?)
- *   7. complaint_endpoint (informational: where to report misbehavior)
+ *   7. complaint_endpoint (informational only — not a permission field, not governed by default_policy)
  *
  * Usage:
  *   node cli/check.js --rules <path> --channel <channel> --disclosed <true|false>
@@ -185,13 +185,9 @@ if (rules.third_party_restrictions) {
   );
 }
 
-// Check 6: complaint_endpoint (Decision Procedure step 7 — informational)
-// Absence with deny_if_unspecified is noted; presence is surfaced in output.
-if (!rules.complaint_endpoint && rules.default_policy === "deny_if_unspecified") {
-  reasons.push(
-    "complaint_endpoint is absent and default_policy is deny_if_unspecified"
-  );
-}
+// complaint_endpoint is informational — not a permission field.
+// Its presence or absence never blocks agent actions and is not governed by default_policy.
+// Presence is surfaced in output below.
 
 // --- Output result ---
 
