@@ -1,0 +1,12 @@
+{
+  "schema_version": "0.1",
+  "venue_name": "Test Venue (no complaint endpoint)",
+  "venue_url": "https://test-venue.example.com",
+  "last_updated": "2026-03-05",
+  "effective_at": "2026-03-05",
+  "default_policy": "deny_if_unspecified",
+  "disclosure_required": {
+    "enabled": false
+  },
+  "allowed_channels": ["phone", "web"]
+}

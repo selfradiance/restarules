@@ -67,5 +67,22 @@ assert(
   t7.thirdParty.defined === false && t7.thirdParty.defaultPolicyResult === "DENIED_DEFAULT_POLICY"
 );
 
+// Test 8: missing complaint_endpoint does not produce a DENY verdict
+const noComplaintRules = {
+  schema_version: "0.1",
+  venue_name: "Test Venue",
+  venue_url: "https://test-venue.example.com",
+  last_updated: "2026-03-05",
+  effective_at: "2026-03-05",
+  default_policy: "deny_if_unspecified",
+  disclosure_required: { enabled: false },
+  allowed_channels: ["phone"],
+};
+const t8 = evaluateCompliance(noComplaintRules, { channel: "phone" });
+assert(
+  "Missing complaint_endpoint with deny_if_unspecified does not produce DENY (complaintEndpoint is null, channel is ALLOWED)",
+  t8.complaintEndpoint === null && t8.channel.result === "ALLOWED"
+);
+
 console.log(`\nReference agent tests: ${passed} passed, ${failed} failed.`);
 if (failed > 0) process.exit(1);

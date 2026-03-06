@@ -234,4 +234,26 @@ try {
   process.exit(1);
 }
 
+// Test 12: missing complaint_endpoint with deny_if_unspecified does NOT produce a denial
+try {
+  const noComplaintRules = path.join(__dirname, "fixtures", "test-venue-no-complaint.json");
+  const cmd = `node ${cliPath} --rules ${noComplaintRules} --channel phone --disclosed true`;
+  const output = execSync(cmd, { encoding: "utf8" });
+  if (output.includes("ALLOW") && !output.includes("complaint_endpoint is absent")) {
+    console.log(
+      "PASS: Missing complaint_endpoint with deny_if_unspecified does not produce denial"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected ALLOW with no complaint_endpoint denial for missing complaint_endpoint"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on complaint_endpoint absence test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
 console.log("\nAll compliance checker tests passed.");
