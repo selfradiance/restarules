@@ -39,7 +39,9 @@ In this file, `rate_limits`, `human_escalation_required`, `third_party_restricti
 
 Here the same four fields are omitted, but `default_policy` is `"allow_if_unspecified"`, so an agent treats the missing rules as permitted.
 
-`default_policy` applies only to optional properties defined in this schema version that are omitted entirely. In v0.1, the four optional fields are: `rate_limits`, `human_escalation_required`, `third_party_restrictions`, and `complaint_endpoint`. All other fields are required and must always be present. `default_policy` does not override fields that are present, and it does not apply to invalid or malformed values (which should always be treated as an error).
+`default_policy` applies only to **permission fields** — optional fields that govern whether an agent action is allowed. In v0.1, the three permission fields governed by `default_policy` are: `rate_limits`, `human_escalation_required`, and `third_party_restrictions`. All other required fields must always be present. `default_policy` does not override fields that are present, and it does not apply to invalid or malformed values (which should always be treated as an error).
+
+`complaint_endpoint` is an **informational field**, not a permission field. Its presence or absence never blocks agent actions and is not governed by `default_policy`. Agents should surface the URL when present (so users know where to report misbehavior), but a missing `complaint_endpoint` is not a denial condition under any policy.
 
 ## Decision Procedure for Agents
 
