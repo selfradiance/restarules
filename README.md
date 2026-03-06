@@ -102,6 +102,68 @@ Rate limits in v0.1 are advisory. The schema defines rate limit rules (action ty
 
 Full identity semantics are planned for v0.2.
 
+## Live Demo
+
+A demo rules file is hosted via GitHub Pages at:
+
+```
+https://selfradiance.github.io/restarules/.well-known/agent-venue-rules.json
+```
+
+This demonstrates the `/.well-known/` hosting pattern using a fictional restaurant (Bella Notte Trattoria). The demo file uses `default_policy: "deny_if_unspecified"` with two optional fields omitted, showing how the default policy governs absent rules in practice.
+
+## Hosting Your Own Rules File
+
+To publish rules for your venue, host a JSON file at `/.well-known/agent-venue-rules.json` on your restaurant's domain. For example, if your website is `https://example-restaurant.com`, the rules file should be fetchable at:
+
+```
+https://example-restaurant.com/.well-known/agent-venue-rules.json
+```
+
+### Cache-Control Recommendations
+
+Agents will fetch your rules file before interacting with your venue. To balance freshness with performance, set caching headers on the response:
+
+**Recommended for most venues:**
+
+```
+Cache-Control: public, max-age=3600
+```
+
+This tells agents to cache the file for 1 hour. Rule changes will propagate within an hour of updating the file.
+
+**For venues that change rules frequently (e.g., seasonal hours, event-based policies):**
+
+```
+Cache-Control: public, max-age=900
+```
+
+A 15-minute cache window. More fetch traffic, but faster propagation.
+
+**For venues that rarely change rules:**
+
+```
+Cache-Control: public, max-age=86400
+```
+
+A 24-hour cache window. Minimal fetch traffic, but changes take up to a day to propagate.
+
+Agents SHOULD respect standard HTTP caching headers. Agents MUST NOT cache rules files indefinitely — a maximum cache lifetime of 24 hours is recommended even if no `Cache-Control` header is present.
+
+### CORS Headers
+
+If agents will fetch your rules file from browser-based contexts (e.g., a web booking widget), you should also set:
+
+```
+Access-Control-Allow-Origin: *
+```
+
+This allows any origin to read the file, which is appropriate since rules files are public by design.
+
+### Static Hosting
+
+The rules file is a static JSON file. It can be hosted on any static hosting service (GitHub Pages, Netlify, Vercel, Cloudflare Pages, S3, or your own web server). No API, no authentication, no server-side logic required — just a fetchable URL returning valid JSON.
+
 ## Status
 
 RestaRules is in early development (v0.1). The schema covers disclosure, channels, rate limits, escalation, and third-party restrictions. Deposit policies, cancellation policies, and no-show policies are planned for v0.2.
