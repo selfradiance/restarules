@@ -38,6 +38,23 @@ This file defines the working agreement for any AI coding agent contributing to 
 - Every output must be confirmed working before reporting a task as complete
 - If the schema changes, validate the example file in tests
 
+## Process Template v3 Requirements
+
+The project context file must include three sections:
+- **Assumptions & Unknowns** — what we're assuming to be true and what we don't yet know
+- **Confidence Tags** — a confidence level on key decisions. Five levels: Idea (sounds right, haven't tested), Prototype (built it, works in demo path), Tested (tests exist and pass), Production (deployed, hardened, verified from outside), Security-verified (red-teamed and survived)
+- **Decision Log** — a running log of significant decisions made and why
+
+## Before Starting Any New Feature or Phase (Part 1C)
+
+Before writing any code, define:
+- What we're building
+- What problem it solves
+- What the smallest version is
+- What's out of scope
+
+No code until this is written down.
+
 ## Files That Must Never Be Committed
 
 - `*_PROJECT_CONTEXT.md` — private session history and project state
