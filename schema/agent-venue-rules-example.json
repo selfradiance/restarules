@@ -1,11 +1,14 @@
 {
-  "schema_version": "0.1",
+  "schema_version": "0.2",
   "venue_name": "The Golden Fork",
   "venue_url": "https://www.thegoldenfork.com",
-  "last_updated": "2026-03-05",
-  "effective_at": "2026-03-05",
+  "last_updated": "2026-03-09",
+  "effective_at": "2026-03-09",
 
   "default_policy": "deny_if_unspecified",
+
+  "venue_currency": "USD",
+  "venue_timezone": "America/New_York",
 
   "disclosure_required": {
     "enabled": true,
@@ -19,7 +22,8 @@
       "action": "booking_request",
       "limit": 3,
       "window_unit": "hour",
-      "window_value": 1
+      "window_value": 1,
+      "applies_to": ["create_booking", "modify_booking"]
     }
   ],
 
@@ -39,6 +43,28 @@
     "no_transfer": true,
     "identity_bound_booking": true
   },
+
+  "deposit_policy": {
+    "required": true,
+    "amount": 50,
+    "currency": "USD",
+    "refundable": true
+  },
+
+  "cancellation_policy": {
+    "penalty_applies": true,
+    "window_minutes": 1440,
+    "penalty_amount": 50,
+    "currency": "USD"
+  },
+
+  "no_show_policy": {
+    "fee": 100,
+    "currency": "USD",
+    "grace_period_minutes": 15
+  },
+
+  "user_acknowledgment_requirements": ["deposit_policy", "cancellation_policy", "no_show_policy"],
 
   "complaint_endpoint": "https://www.thegoldenfork.com/report-agent"
 }

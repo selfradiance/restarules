@@ -1,10 +1,12 @@
 {
-  "schema_version": "0.1",
+  "schema_version": "0.2",
   "venue_name": "Bella Notte Trattoria",
   "venue_url": "https://bellanotte-demo.example.com",
-  "last_updated": "2026-03-05",
-  "effective_at": "2026-03-05",
+  "last_updated": "2026-03-09",
+  "effective_at": "2026-03-09",
   "default_policy": "deny_if_unspecified",
+  "venue_currency": "USD",
+  "venue_timezone": "America/Chicago",
   "disclosure_required": {
     "enabled": true,
     "phrasing": "I am an AI assistant calling on behalf of a guest."
@@ -15,6 +17,12 @@
   },
   "party_size_policy": {
     "auto_book_max": 4
+  },
+  "deposit_policy": {
+    "required": true,
+    "amount": 25,
+    "currency": "USD",
+    "refundable": true
   },
   "complaint_endpoint": "https://bellanotte-demo.example.com/agent-complaints"
 }

@@ -103,6 +103,10 @@ Available flags:
 
 The agent respects `default_policy`: if a rule isn't defined in the venue's file, the agent treats it as denied (`deny_if_unspecified`) or allowed (`allow_if_unspecified`) based on the venue's declared policy.
 
+## Schema Version Checking
+
+Agents must check the `schema_version` field first when fetching a rules file. If the version is higher than what the agent understands, the agent should hand off to a human rather than guessing at field semantics. There is no separate `min_agent_version` field — `schema_version` serves this purpose. An agent built for v0.1 can safely ignore unknown fields in a v0.2 file, but should not assume it understands all the rules the venue has set.
+
 ## Security Considerations
 
 RestaRules v0.1 is a conduct standard, not a security product. However, implementers consuming `agent-venue-rules.json` files should be aware of the following:
