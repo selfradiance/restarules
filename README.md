@@ -260,4 +260,12 @@ The rules file is a static JSON file. It can be hosted on any static hosting ser
 
 ## Status
 
-RestaRules is in active development with v0.2 implemented. The schema covers disclosure, channels, rate limits, human escalation, third-party restrictions, party-size policy, deposit policy, cancellation policy, no-show policy, user acknowledgment requirements, venue metadata, and action-scoped rate limiting. All fields are enforced end-to-end by the reference agent and CLI compliance checker, backed by 53 tests. The next schema version on the horizon is v0.3.
+RestaRules is in active development with v0.2 implemented. The schema covers disclosure, channels, rate limits, human escalation, third-party restrictions, party-size policy, deposit policy, cancellation policy, no-show policy, user acknowledgment requirements, venue metadata, and action-scoped rate limiting. All fields are enforced end-to-end by the reference agent and CLI compliance checker, backed by 69 tests. The next schema version on the horizon is v0.3.
+
+## SDK
+
+The `sdk/` directory contains `restarules-sdk`, an npm package that lets developers validate RestaRules files and evaluate agent compliance programmatically. It exports two functions: `validateRules` for JSON Schema validation and `evaluateCompliance` for running the full decision procedure against a proposed action. See [sdk/README.md](sdk/README.md) for full API documentation and usage examples. Install via npm:
+
+```
+npm install restarules-sdk
+```
