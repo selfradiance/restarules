@@ -137,7 +137,7 @@ try {
 // Test 7: DENY — party size exceeds auto-max (8, max is 6)
 try {
   const output = run("--channel phone --disclosed true --party-size 8");
-  if (output.includes("DENY") && output.includes("party_size_auto_max")) {
+  if (output.includes("DENY") && output.includes("auto_book_max")) {
     console.log(
       "PASS: Party size exceeding auto-max gets DENY with escalation reason"
     );

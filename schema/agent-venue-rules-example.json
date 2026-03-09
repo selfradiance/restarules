@@ -24,11 +24,14 @@
   ],
 
   "human_escalation_required": {
-    "party_size_auto_max": 6,
     "conditions": [
       "special_event_booking",
       "complaint_or_dispute"
     ]
+  },
+
+  "party_size_policy": {
+    "auto_book_max": 6
   },
 
   "third_party_restrictions": {

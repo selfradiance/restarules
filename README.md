@@ -97,7 +97,7 @@ Available flags:
 | Flag | Description |
 |---|---|
 | `--channel` | Channel the agent wants to use (e.g., `phone`, `web`, `sms`) |
-| `--party-size` | Number of guests — compared against `party_size_auto_max` |
+| `--party-size` | Number of guests — compared against `party_size_policy.auto_book_max` |
 | `--action` | Action type for rate limit check (e.g., `booking_request`) |
 | `--attempts` | Number of prior attempts — compared against the rate limit |
 

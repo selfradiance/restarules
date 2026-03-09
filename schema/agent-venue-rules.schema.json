@@ -109,14 +109,9 @@
     "human_escalation_required": {
       "type": "object",
       "description": "Conditions under which the agent must hand off to a human instead of proceeding autonomously.",
-      "required": ["party_size_auto_max", "conditions"],
+      "required": ["conditions"],
       "additionalProperties": false,
       "properties": {
-        "party_size_auto_max": {
-          "type": "integer",
-          "description": "Maximum party size an agent may book without human confirmation. Parties larger than this require human escalation.",
-          "minimum": 1
-        },
         "conditions": {
           "type": "array",
           "description": "Named conditions that always require human escalation.",

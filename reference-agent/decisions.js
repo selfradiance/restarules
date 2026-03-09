@@ -29,27 +29,29 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
 
   // 3. Party size
   if (partySize !== null) {
-    if (rules.human_escalation_required) {
-      const autoMax = rules.human_escalation_required.party_size_auto_max;
+    if (rules.party_size_policy) {
+      const autoMax = rules.party_size_policy.auto_book_max;
       result.partySize = {
         result: partySize > autoMax ? "ESCALATE_TO_HUMAN" : "ALLOWED",
         autoMax,
-        conditions: rules.human_escalation_required.conditions,
       };
     } else {
       result.partySize = {
         result: dp === "allow_if_unspecified" ? "ALLOWED" : "DENIED_DEFAULT_POLICY",
         autoMax: null,
-        conditions: [],
       };
     }
   } else {
     result.partySize = {
       result: "NOT_CHECKED",
-      autoMax: rules.human_escalation_required ? rules.human_escalation_required.party_size_auto_max : null,
-      conditions: rules.human_escalation_required ? rules.human_escalation_required.conditions : [],
+      autoMax: rules.party_size_policy ? rules.party_size_policy.auto_book_max : null,
     };
   }
+
+  // 3b. Escalation conditions (non-party-size triggers)
+  result.escalationConditions = rules.human_escalation_required
+    ? rules.human_escalation_required.conditions
+    : [];
 
   // 4. Rate limits
   if (action !== null && attempts !== null) {

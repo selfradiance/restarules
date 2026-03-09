@@ -137,29 +137,34 @@ if (rules.rate_limits) {
   reasons.push("rate_limits is absent and default_policy is deny_if_unspecified");
 }
 
-// Check 4: human_escalation_required (Decision Procedure step 5)
-if (rules.human_escalation_required) {
-  if (args["party-size"] !== undefined) {
-    const partySize = parseInt(args["party-size"], 10);
-    if (partySize > rules.human_escalation_required.party_size_auto_max) {
+// Check 4a: party_size_policy (Decision Procedure step 5a)
+if (args["party-size"] !== undefined) {
+  const partySize = parseInt(args["party-size"], 10);
+  if (rules.party_size_policy) {
+    if (partySize > rules.party_size_policy.auto_book_max) {
       reasons.push(
-        `Party size ${partySize} exceeds party_size_auto_max of ${rules.human_escalation_required.party_size_auto_max} — human escalation required`
+        `Party size ${partySize} exceeds auto_book_max of ${rules.party_size_policy.auto_book_max} — human review required`
       );
     }
+  } else if (rules.default_policy === "deny_if_unspecified") {
+    reasons.push(
+      "party_size_policy is absent and default_policy is deny_if_unspecified"
+    );
   }
-  if (args["escalation-condition"] !== undefined) {
+}
+
+// Check 4b: human_escalation_required — escalation conditions (non-party-size triggers)
+if (args["escalation-condition"] !== undefined) {
+  if (rules.human_escalation_required) {
     const cond = args["escalation-condition"];
     if (rules.human_escalation_required.conditions.includes(cond)) {
       reasons.push(`Escalation condition "${cond}" requires human handoff`);
     }
+  } else if (rules.default_policy === "deny_if_unspecified") {
+    reasons.push(
+      "human_escalation_required is absent and default_policy is deny_if_unspecified"
+    );
   }
-} else if (
-  rules.default_policy === "deny_if_unspecified" &&
-  (args["party-size"] !== undefined || args["escalation-condition"] !== undefined)
-) {
-  reasons.push(
-    "human_escalation_required is absent and default_policy is deny_if_unspecified"
-  );
 }
 
 // Check 5: third_party_restrictions (Decision Procedure step 6)

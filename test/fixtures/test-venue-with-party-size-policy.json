@@ -11,7 +11,6 @@
   },
   "allowed_channels": ["phone", "web"],
   "human_escalation_required": {
-    "party_size_auto_max": 4,
     "conditions": ["reservation_modification"]
   },
   "complaint_endpoint": "https://bellanotte-demo.example.com/agent-complaints",
