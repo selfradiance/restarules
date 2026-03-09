@@ -25,7 +25,7 @@ Every rules file includes a `default_policy` field set to either `"deny_if_unspe
 }
 ```
 
-In this file, `rate_limits`, `human_escalation_required`, `third_party_restrictions`, and `complaint_endpoint` are all omitted. Because `default_policy` is `"deny_if_unspecified"`, an agent must treat all of those missing rules as denials.
+In this file, many optional fields are omitted. Because `default_policy` is `"deny_if_unspecified"`, an agent must treat all missing **permission fields** as denials (see list below).
 
 **Example — permissive venue (allow_if_unspecified):**
 
@@ -37,11 +37,26 @@ In this file, `rate_limits`, `human_escalation_required`, `third_party_restricti
 }
 ```
 
-Here the same four fields are omitted, but `default_policy` is `"allow_if_unspecified"`, so an agent treats the missing rules as permitted.
+Here the same optional fields are omitted, but `default_policy` is `"allow_if_unspecified"`, so an agent treats the missing permission fields as permitted.
 
-`default_policy` applies only to **permission fields** — optional fields that govern whether an agent action is allowed. In v0.1, the three permission fields governed by `default_policy` are: `rate_limits`, `human_escalation_required`, and `third_party_restrictions`. All other required fields must always be present. `default_policy` does not override fields that are present, and it does not apply to invalid or malformed values (which should always be treated as an error).
+`default_policy` applies only to **permission fields** — optional fields that govern whether an agent action is allowed. The permission fields governed by `default_policy` are:
 
-`complaint_endpoint` is an **informational field**, not a permission field. Its presence or absence never blocks agent actions and is not governed by `default_policy`. Agents should surface the URL when present (so users know where to report misbehavior), but a missing `complaint_endpoint` is not a denial condition under any policy.
+- `rate_limits`
+- `human_escalation_required`
+- `third_party_restrictions`
+- `party_size_policy`
+- `deposit_policy`
+- `user_acknowledgment_requirements`
+
+All required fields must always be present. `default_policy` does not override fields that are present, and it does not apply to invalid or malformed values (which should always be treated as an error).
+
+The following are **informational fields** — they are never governed by `default_policy` and their absence never blocks agent actions:
+
+- `complaint_endpoint` — agents should surface the URL when present so users know where to report misbehavior
+- `cancellation_policy` — agents should convey cancellation terms to the user when present
+- `no_show_policy` — agents should convey no-show terms to the user when present
+
+`venue_currency` and `venue_timezone` are **metadata fields** — they provide context but are not governed by `default_policy`.
 
 ## Decision Procedure for Agents
 
@@ -50,10 +65,14 @@ When an agent evaluates a venue's rules file, it must follow this procedure:
 1. **Validate the file against the schema.** If validation fails, do not proceed. Treat the rules as unreadable.
 2. **Check `disclosure_required`.** If `disclosure_required.enabled` is `true`, the agent must identify itself as an AI before making any request. No exceptions.
 3. **Check `allowed_channels`.** If the agent's intended channel is not listed in `allowed_channels`, the request is denied.
-4. **Check `rate_limits`.** If a rate limit rule applies to the intended action, the agent must respect the limit. If multiple rate limit rules apply, the most restrictive rule applies.
-5. **Check `human_escalation_required`.** If the request meets any escalation condition (e.g., party size exceeds the venue's configured maximum party size threshold, or the condition matches a listed trigger), the agent must hand off to a human.
-6. **Check `third_party_restrictions`.** If the agent is acting on behalf of a third party and restrictions apply, the request is denied.
-7. **For any optional schema-defined rule or constraint that is omitted from the file, apply `default_policy`.** If `default_policy` is `"deny_if_unspecified"`, treat the missing rule as a denial. If `"allow_if_unspecified"`, treat it as permitted.
+4. **Check `rate_limits`.** If a rate limit rule applies to the intended action, the agent must respect the limit. If multiple rate limit rules apply, the most restrictive rule applies. If a rule has an `applies_to` array, it only applies when the agent's action matches one of the listed action types.
+5. **Check `party_size_policy`.** If the party size exceeds `auto_book_max`, the agent must escalate to a human. If `human_review_above` is set, party sizes above that threshold require human review. If `large_party_channels` is set, large parties must use one of the listed channels.
+6. **Check `human_escalation_required`.** If the request matches a listed escalation condition (e.g., `reservation_modification`, `special_event_booking`), the agent must hand off to a human. Note: party-size escalation is handled by `party_size_policy` (step 5), not this field.
+7. **Check `third_party_restrictions`.** If the agent is acting on behalf of a third party and restrictions apply, the request is denied.
+8. **Check `deposit_policy`.** If deposits are required (`required: true`), the agent must inform the user of the deposit amount, currency, and refund terms before proceeding.
+9. **Check `user_acknowledgment_requirements`.** If present, the agent must confirm each listed policy (e.g., `deposit_policy`, `cancellation_policy`, `no_show_policy`) with the user before proceeding.
+10. **Convey informational fields.** If `cancellation_policy` or `no_show_policy` are present, the agent should convey their terms to the user. These fields never block actions — they are informational only.
+11. **For any optional permission field that is omitted from the file, apply `default_policy`.** If `default_policy` is `"deny_if_unspecified"`, treat the missing permission field as a denial. If `"allow_if_unspecified"`, treat it as permitted. Informational fields (`complaint_endpoint`, `cancellation_policy`, `no_show_policy`) are never governed by `default_policy`.
 
 An agent that follows this procedure can deterministically decide whether a proposed action is allowed before taking it.
 
@@ -63,6 +82,51 @@ The schema lives in `schema/`:
 
 - `agent-venue-rules.schema.json` — Formal JSON Schema (Draft 2020-12). This is the source of truth for what a valid rules file looks like.
 - `agent-venue-rules-example.json` — A complete example file for a fictional restaurant (The Golden Fork).
+
+### Required Fields
+
+| Field | Description |
+|---|---|
+| `schema_version` | Version string (`"0.1"` or `"0.2"`) |
+| `venue_name` | Restaurant name |
+| `venue_url` | Restaurant website (HTTPS) |
+| `last_updated` | Date the file was last edited |
+| `effective_at` | Date the rules take effect |
+| `default_policy` | `"deny_if_unspecified"` or `"allow_if_unspecified"` |
+| `disclosure_required` | Must AI identify itself? `enabled` (boolean) + `phrasing` (string) |
+| `allowed_channels` | Array of permitted channels: `phone`, `web`, `sms`, `email`, `app` |
+
+### Optional Fields — Permission (governed by `default_policy`)
+
+| Field | Description |
+|---|---|
+| `rate_limits` | Array of rate limit rules. Each rule has `action`, `limit`, `window_unit`, `window_value`, and optional `applies_to` (array of action types from `$defs.action_type`) |
+| `human_escalation_required` | Non-party-size escalation triggers (e.g., `reservation_modification`) |
+| `third_party_restrictions` | `no_resale`, `no_transfer`, `identity_bound_booking` (booleans) |
+| `party_size_policy` | `auto_book_max` (required), `human_review_above` (optional), `large_party_channels` (optional) |
+| `deposit_policy` | `required` (boolean, required), `amount`, `currency`, `refundable` |
+| `user_acknowledgment_requirements` | Array of policy names (`deposit_policy`, `cancellation_policy`, `no_show_policy`) the agent must confirm with the user |
+
+### Optional Fields — Informational (not governed by `default_policy`)
+
+| Field | Description |
+|---|---|
+| `complaint_endpoint` | URL for reporting agent misbehavior |
+| `cancellation_policy` | `penalty_applies` (boolean, required), `window_minutes`, `penalty_amount`, `currency` |
+| `no_show_policy` | `fee` (number, required), `currency`, `grace_period_minutes` |
+
+### Optional Fields — Metadata
+
+| Field | Description |
+|---|---|
+| `venue_currency` | ISO 4217 currency code (e.g., `"USD"`) |
+| `venue_timezone` | IANA timezone identifier (e.g., `"America/New_York"`) |
+
+### Shared Definitions (`$defs`)
+
+| Definition | Values |
+|---|---|
+| `action_type` | `check_availability`, `create_booking`, `modify_booking`, `cancel_booking` — used by `rate_limits[].applies_to` |
 
 ## Validation
 
@@ -109,7 +173,7 @@ Agents must check the `schema_version` field first when fetching a rules file. I
 
 ## Security Considerations
 
-RestaRules v0.1 is a conduct standard, not a security product. However, implementers consuming `agent-venue-rules.json` files should be aware of the following:
+RestaRules is a conduct standard, not a security product. However, implementers consuming `agent-venue-rules.json` files should be aware of the following:
 
 ### Complaint Endpoint Handling
 
@@ -124,13 +188,13 @@ These precautions mitigate Server-Side Request Forgery (SSRF) risks where a mali
 
 ### Rate Limit Identity Semantics
 
-Rate limits in v0.1 are advisory. The schema defines rate limit rules (action type, count, time window) but does NOT define what constitutes an "agent" for counting purposes. Implementers should:
+Rate limits are advisory. The schema defines rate limit rules (action type, count, time window) but does NOT define what constitutes an "agent" for counting purposes. Implementers should:
 
 - If the agent declares an identity (e.g., via a User-Agent header or agent ID field), enforce rate limits per declared identity.
 - If no agent identity is available, fall back to enforcement per source (IP address, phone number, or session).
-- Be aware that agents can rotate identifiers. Rate limits in v0.1 are a signal of venue intent, not a cryptographic enforcement mechanism.
+- Be aware that agents can rotate identifiers. Rate limits are a signal of venue intent, not a cryptographic enforcement mechanism.
 
-Full identity semantics are planned for v0.2.
+Full identity semantics are planned for v0.3.
 
 ## Live Demo
 
@@ -140,7 +204,7 @@ A demo rules file is hosted via GitHub Pages at:
 https://selfradiance.github.io/restarules/.well-known/agent-venue-rules.json
 ```
 
-This demonstrates the `/.well-known/` hosting pattern using a fictional restaurant (Bella Notte Trattoria). The demo file uses `default_policy: "deny_if_unspecified"` with two optional fields omitted, showing how the default policy governs absent rules in practice.
+This demonstrates the `/.well-known/` hosting pattern using a fictional restaurant (Bella Notte Trattoria). The demo file includes v0.2 fields (`party_size_policy`, `deposit_policy`, `venue_currency`, `venue_timezone`) and uses `default_policy: "deny_if_unspecified"`, showing how the default policy governs absent permission fields in practice.
 
 ## Hosting Your Own Rules File
 
@@ -196,4 +260,4 @@ The rules file is a static JSON file. It can be hosted on any static hosting ser
 
 ## Status
 
-RestaRules is in early development (v0.1). The schema covers disclosure, channels, rate limits, escalation, and third-party restrictions. Deposit policies, cancellation policies, and no-show policies are planned for v0.2.
+RestaRules is in active development with v0.2 implemented. The schema covers disclosure, channels, rate limits, human escalation, third-party restrictions, party-size policy, deposit policy, cancellation policy, no-show policy, user acknowledgment requirements, venue metadata, and action-scoped rate limiting. All fields are enforced end-to-end by the reference agent and CLI compliance checker, backed by 53 tests. The next schema version on the horizon is v0.3.
