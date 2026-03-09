@@ -7,6 +7,7 @@ const depositFixture = require('./fixtures/test-venue-with-deposit.json');
 const cancellationFixture = require('./fixtures/test-venue-with-cancellation.json');
 const noShowFixture = require('./fixtures/test-venue-with-no-show.json');
 const acknowledgmentFixture = require('./fixtures/test-venue-with-acknowledgment.json');
+const scopedRateLimitsFixture = require('./fixtures/test-venue-with-scoped-rate-limits.json');
 
 const ajv = new Ajv();
 addFormats(ajv);
@@ -187,6 +188,41 @@ if (!validDuplicate) {
   console.log('PASS: user_acknowledgment_requirements with duplicate entries correctly fails validation.');
 } else {
   console.error('FAIL: user_acknowledgment_requirements with duplicate entries should have failed validation.');
+  failed = true;
+}
+
+// Test 17: fixture with applies_to on a rate limit rule passes validation
+const validScoped = validate(scopedRateLimitsFixture);
+if (validScoped) {
+  console.log('PASS: Fixture with scoped applies_to on rate limit rule validates against schema.');
+} else {
+  for (const error of validate.errors) {
+    console.error('FAIL:', error.instancePath, error.message);
+  }
+  failed = true;
+}
+
+// Test 18: rate limit rule with invalid action in applies_to fails validation
+const invalidAction = JSON.parse(JSON.stringify(scopedRateLimitsFixture));
+invalidAction.rate_limits[0].applies_to = ["invalid_action"];
+const validInvalidAction = validate(invalidAction);
+if (!validInvalidAction) {
+  console.log('PASS: rate limit with invalid applies_to action correctly fails validation.');
+} else {
+  console.error('FAIL: rate limit with invalid applies_to action should have failed validation.');
+  failed = true;
+}
+
+// Test 19: rate limit rule without applies_to still passes validation (backward compatible)
+const noAppliesTo = JSON.parse(JSON.stringify(scopedRateLimitsFixture));
+delete noAppliesTo.rate_limits[0].applies_to;
+const validNoAppliesTo = validate(noAppliesTo);
+if (validNoAppliesTo) {
+  console.log('PASS: rate limit without applies_to still validates (backward compatible).');
+} else {
+  for (const error of validate.errors) {
+    console.error('FAIL:', error.instancePath, error.message);
+  }
   failed = true;
 }
 
