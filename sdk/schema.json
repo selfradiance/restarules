@@ -1,0 +1,304 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://restarules.org/schema/v0.1/agent-venue-rules.schema.json",
+  "title": "RestaRules Agent Venue Rules",
+  "description": "Machine-readable conduct and consent rules for AI agent interactions with a restaurant venue. Schema v0.1.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "venue_name",
+    "venue_url",
+    "last_updated",
+    "effective_at",
+    "default_policy",
+    "disclosure_required",
+    "allowed_channels"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Version of the RestaRules schema this file conforms to.",
+      "enum": ["0.1", "0.2"]
+    },
+    "venue_name": {
+      "type": "string",
+      "description": "The restaurant's display name.",
+      "minLength": 1
+    },
+    "venue_url": {
+      "type": "string",
+      "description": "The restaurant's primary website URL.",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "last_updated": {
+      "type": "string",
+      "description": "ISO 8601 date when this rules file was last edited (YYYY-MM-DD).",
+      "format": "date"
+    },
+    "effective_at": {
+      "type": "string",
+      "description": "ISO 8601 date when these rules take effect (YYYY-MM-DD). May differ from last_updated if published in advance.",
+      "format": "date"
+    },
+    "default_policy": {
+      "type": "string",
+      "description": "What agents should assume for any capability not explicitly addressed in this file.",
+      "enum": ["deny_if_unspecified", "allow_if_unspecified"]
+    },
+    "disclosure_required": {
+      "type": "object",
+      "description": "Whether AI agents must identify themselves before interacting with the venue.",
+      "required": ["enabled"],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "If true, the agent must disclose that it is an AI before making any request."
+        },
+        "phrasing": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional suggested phrasing for the disclosure. Informational, not prescriptive."
+        }
+      }
+    },
+    "allowed_channels": {
+      "type": "array",
+      "description": "Communication channels the venue permits AI agents to use.",
+      "items": {
+        "type": "string",
+        "enum": ["phone", "web", "sms", "email", "app"]
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "rate_limits": {
+      "type": "array",
+      "description": "Rate limits on how frequently a single agent may perform specific actions at this venue.",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["action", "limit", "window_unit", "window_value"],
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "The action being rate-limited.",
+            "enum": ["booking_request", "cancellation_request", "inquiry", "complaint"]
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of attempts allowed within the time window.",
+            "minimum": 1
+          },
+          "window_unit": {
+            "type": "string",
+            "description": "Time unit for the rate limit window.",
+            "enum": ["minute", "hour", "day"]
+          },
+          "window_value": {
+            "type": "integer",
+            "description": "Number of window_units that define the rate limit period.",
+            "minimum": 1
+          },
+          "applies_to": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/action_type"
+            },
+            "uniqueItems": true,
+            "description": "Which actions this rate limit applies to. If absent, applies to all actions."
+          }
+        }
+      }
+    },
+    "human_escalation_required": {
+      "type": "object",
+      "description": "Conditions under which the agent must hand off to a human instead of proceeding autonomously.",
+      "required": ["conditions"],
+      "additionalProperties": false,
+      "properties": {
+        "conditions": {
+          "type": "array",
+          "description": "Named conditions that always require human escalation.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "special_event_booking",
+              "complaint_or_dispute",
+              "accessibility_request",
+              "dietary_emergency",
+              "reservation_modification"
+            ]
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "third_party_restrictions": {
+      "type": "object",
+      "description": "Rules governing whether bookings can be resold, transferred, or made on behalf of unverified parties.",
+      "required": ["no_resale", "no_transfer", "identity_bound_booking"],
+      "additionalProperties": false,
+      "properties": {
+        "no_resale": {
+          "type": "boolean",
+          "description": "If true, reservations made through this venue may not be resold."
+        },
+        "no_transfer": {
+          "type": "boolean",
+          "description": "If true, reservations may not be transferred to a different party."
+        },
+        "identity_bound_booking": {
+          "type": "boolean",
+          "description": "If true, the reservation is bound to the identity provided at booking time."
+        }
+      }
+    },
+    "complaint_endpoint": {
+      "type": "string",
+      "description": "URL where agent misbehavior can be reported to the venue.",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "venue_currency": {
+      "type": "string",
+      "description": "ISO 4217 currency code for the venue (e.g. \"USD\", \"EUR\", \"GBP\").",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "venue_timezone": {
+      "type": "string",
+      "description": "IANA timezone identifier for the venue (e.g. \"America/New_York\", \"Europe/London\").",
+      "minLength": 1
+    },
+    "cancellation_policy": {
+      "type": "object",
+      "description": "Venue cancellation terms. Informational field — describes terms for user awareness, never blocks agent actions.",
+      "required": ["penalty_applies"],
+      "additionalProperties": false,
+      "properties": {
+        "penalty_applies": {
+          "type": "boolean",
+          "description": "Whether a penalty is charged for late cancellation."
+        },
+        "window_minutes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Minutes before reservation time when the penalty kicks in."
+        },
+        "penalty_amount": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Penalty amount charged for late cancellation."
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "ISO 4217 currency code. Defaults to venue_currency if omitted."
+        }
+      }
+    },
+    "deposit_policy": {
+      "type": "object",
+      "description": "Deposit requirements for reservations. Permission field — governed by default_policy when absent.",
+      "required": ["required"],
+      "additionalProperties": false,
+      "properties": {
+        "required": {
+          "type": "boolean",
+          "description": "Whether a deposit is required to confirm the booking."
+        },
+        "amount": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Deposit amount per person or per booking (context-dependent)."
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "ISO 4217 currency code. Defaults to venue_currency if omitted."
+        },
+        "refundable": {
+          "type": "boolean",
+          "description": "Whether the deposit is refundable upon valid cancellation."
+        }
+      }
+    },
+    "party_size_policy": {
+      "type": "object",
+      "description": "Defines party-size thresholds for automated booking vs human review.",
+      "required": ["auto_book_max"],
+      "additionalProperties": false,
+      "properties": {
+        "auto_book_max": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Largest party size an agent can book without human review."
+        },
+        "human_review_above": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Party sizes above this number require human involvement."
+        },
+        "large_party_channels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["phone", "web", "sms", "email", "app"]
+          },
+          "description": "Specific channels for large party inquiries."
+        }
+      }
+    },
+    "no_show_policy": {
+      "type": "object",
+      "description": "Venue no-show terms. Informational field — describes consequences for user awareness, never blocks agent actions.",
+      "required": ["fee"],
+      "additionalProperties": false,
+      "properties": {
+        "fee": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Fee charged for a no-show."
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "ISO 4217 currency code. Defaults to venue_currency if omitted."
+        },
+        "grace_period_minutes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Minutes after reservation time before a no-show is declared."
+        }
+      }
+    },
+    "user_acknowledgment_requirements": {
+      "type": "array",
+      "description": "Policies the agent must confirm the user is aware of before acting. Permission field — governed by default_policy when absent.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "deposit_policy",
+          "cancellation_policy",
+          "no_show_policy"
+        ]
+      },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "action_type": {
+      "type": "string",
+      "description": "Shared vocabulary of agent action types. Referenced by fields like rate_limits.applies_to.",
+      "enum": [
+        "check_availability",
+        "create_booking",
+        "modify_booking",
+        "cancel_booking"
+      ]
+    }
+  }
+}

@@ -1,10 +1,8 @@
 // RestaRules SDK — entry point
-// validateRules and evaluateCompliance will be implemented in Steps 3-4
+const { validateRules } = require("./validator.js");
 
 module.exports = {
-  validateRules: function (rules) {
-    throw new Error("Not yet implemented — coming in Step 3");
-  },
+  validateRules: validateRules,
   evaluateCompliance: function (rules, action) {
     throw new Error("Not yet implemented — coming in Step 4");
   },
