@@ -159,6 +159,16 @@
       "description": "URL where agent misbehavior can be reported to the venue.",
       "format": "uri",
       "pattern": "^https://"
+    },
+    "venue_currency": {
+      "type": "string",
+      "description": "ISO 4217 currency code for the venue (e.g. \"USD\", \"EUR\", \"GBP\").",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "venue_timezone": {
+      "type": "string",
+      "description": "IANA timezone identifier for the venue (e.g. \"America/New_York\", \"Europe/London\").",
+      "minLength": 1
     }
   },
   "$defs": {
