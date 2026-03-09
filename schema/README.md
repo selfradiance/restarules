@@ -61,6 +61,36 @@ Every field in the schema is classified as either a **permission field** or an *
 
 This classification was established in Session 12 and is a core design principle of the schema.
 
+## v0.2 Migration: Party-Size Policy
+
+In v0.1, party-size logic lives inside `human_escalation_required` (specifically the `party_size_auto_max` field). In v0.2, this is being replaced by a dedicated top-level `party_size_policy` object.
+
+### What's changing
+
+- The `party_size_auto_max` field currently inside `human_escalation_required` is being replaced by a new top-level `party_size_policy` object.
+- `human_escalation_required` will keep its non-party-size triggers (e.g. `reservation_modification`) but will no longer contain party-size thresholds.
+
+### New `party_size_policy` field (planned structure)
+
+- `auto_book_max` (integer) — Largest party size an agent can book without human review.
+- `human_review_above` (integer) — Party sizes above this require human involvement.
+- `large_party_channels` (array, optional) — Specific channels for large party inquiries (e.g. `["phone", "email"]`).
+
+### What `human_escalation_required` keeps
+
+- `conditions` array — Non-party-size triggers like `reservation_modification`, `special_event_booking`, `complaint_or_dispute`, `accessibility_request`, `dietary_emergency`.
+- The field remains a permission field governed by `default_policy`.
+
+### What `human_escalation_required` loses
+
+- `party_size_auto_max` — This moves to `party_size_policy.auto_book_max`.
+
+### Migration note for agents
+
+- Agents implementing **v0.1** should check `human_escalation_required.party_size_auto_max`.
+- Agents implementing **v0.2** should check `party_size_policy.auto_book_max` instead.
+- Both fields will not coexist in the same rules file.
+
 ## How to Validate
 
 You can validate any rules file against the schema using Python:
