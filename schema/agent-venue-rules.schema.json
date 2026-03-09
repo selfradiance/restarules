@@ -165,6 +165,32 @@
       "description": "IANA timezone identifier for the venue (e.g. \"America/New_York\", \"Europe/London\").",
       "minLength": 1
     },
+    "deposit_policy": {
+      "type": "object",
+      "description": "Deposit requirements for reservations. Permission field — governed by default_policy when absent.",
+      "required": ["required"],
+      "additionalProperties": false,
+      "properties": {
+        "required": {
+          "type": "boolean",
+          "description": "Whether a deposit is required to confirm the booking."
+        },
+        "amount": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Deposit amount per person or per booking (context-dependent)."
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "ISO 4217 currency code. Defaults to venue_currency if omitted."
+        },
+        "refundable": {
+          "type": "boolean",
+          "description": "Whether the deposit is refundable upon valid cancellation."
+        }
+      }
+    },
     "party_size_policy": {
       "type": "object",
       "description": "Defines party-size thresholds for automated booking vs human review.",

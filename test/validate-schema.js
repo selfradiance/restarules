@@ -3,6 +3,7 @@ const addFormats = require('ajv-formats');
 const schema = require('../schema/agent-venue-rules.schema.json');
 const example = require('../schema/agent-venue-rules-example.json');
 const partySizeFixture = require('./fixtures/test-venue-with-party-size-policy.json');
+const depositFixture = require('./fixtures/test-venue-with-deposit.json');
 
 const ajv = new Ajv();
 addFormats(ajv);
@@ -51,6 +52,39 @@ if (!validZero) {
   console.log('PASS: party_size_policy with auto_book_max: 0 correctly fails validation.');
 } else {
   console.error('FAIL: party_size_policy with auto_book_max: 0 should have failed validation.');
+  failed = true;
+}
+
+// Test 5: fixture with valid deposit_policy validates
+const validDeposit = validate(depositFixture);
+if (validDeposit) {
+  console.log('PASS: Fixture with deposit_policy validates against schema.');
+} else {
+  for (const error of validate.errors) {
+    console.error('FAIL:', error.instancePath, error.message);
+  }
+  failed = true;
+}
+
+// Test 6: deposit_policy missing required boolean fails validation
+const missingRequired = JSON.parse(JSON.stringify(depositFixture));
+missingRequired.deposit_policy = { amount: 25 };
+const validMissingReq = validate(missingRequired);
+if (!validMissingReq) {
+  console.log('PASS: deposit_policy missing required boolean correctly fails validation.');
+} else {
+  console.error('FAIL: deposit_policy missing required boolean should have failed validation.');
+  failed = true;
+}
+
+// Test 7: deposit_policy with amount: -5 fails validation (minimum is 0)
+const negativeAmount = JSON.parse(JSON.stringify(depositFixture));
+negativeAmount.deposit_policy.amount = -5;
+const validNegative = validate(negativeAmount);
+if (!validNegative) {
+  console.log('PASS: deposit_policy with negative amount correctly fails validation.');
+} else {
+  console.error('FAIL: deposit_policy with negative amount should have failed validation.');
   failed = true;
 }
 

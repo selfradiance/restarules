@@ -1,0 +1,26 @@
+{
+  "schema_version": "0.1",
+  "venue_name": "Bella Notte Trattoria",
+  "venue_url": "https://bellanotte-demo.example.com",
+  "last_updated": "2026-03-05",
+  "effective_at": "2026-03-05",
+  "default_policy": "deny_if_unspecified",
+  "disclosure_required": {
+    "enabled": true,
+    "phrasing": "I am an AI assistant calling on behalf of a guest."
+  },
+  "allowed_channels": ["phone", "web"],
+  "human_escalation_required": {
+    "conditions": ["reservation_modification"]
+  },
+  "party_size_policy": {
+    "auto_book_max": 4
+  },
+  "complaint_endpoint": "https://bellanotte-demo.example.com/agent-complaints",
+  "deposit_policy": {
+    "required": true,
+    "amount": 25,
+    "currency": "USD",
+    "refundable": true
+  }
+}
