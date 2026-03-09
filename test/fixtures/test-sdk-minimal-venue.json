@@ -1,0 +1,12 @@
+{
+  "schema_version": "0.2",
+  "venue_name": "Minimal Cafe",
+  "venue_url": "https://minimal-cafe.example.com",
+  "last_updated": "2026-03-09",
+  "effective_at": "2026-03-09",
+  "default_policy": "allow_if_unspecified",
+  "disclosure_required": {
+    "enabled": false
+  },
+  "allowed_channels": ["phone", "web", "sms", "email", "app"]
+}

@@ -1,0 +1,62 @@
+{
+  "schema_version": "0.2",
+  "venue_name": "SDK Test Bistro",
+  "venue_url": "https://sdk-test-bistro.example.com",
+  "last_updated": "2026-03-09",
+  "effective_at": "2026-03-09",
+  "default_policy": "deny_if_unspecified",
+  "venue_currency": "USD",
+  "venue_timezone": "America/New_York",
+  "disclosure_required": {
+    "enabled": true,
+    "phrasing": "I am an AI assistant."
+  },
+  "allowed_channels": ["phone", "web"],
+  "rate_limits": [
+    {
+      "action": "booking_request",
+      "limit": 3,
+      "window_value": 1,
+      "window_unit": "hour"
+    },
+    {
+      "action": "booking_request",
+      "limit": 1,
+      "window_value": 1,
+      "window_unit": "minute",
+      "applies_to": ["create_booking"]
+    }
+  ],
+  "human_escalation_required": {
+    "conditions": ["reservation_modification"]
+  },
+  "party_size_policy": {
+    "auto_book_max": 6,
+    "human_review_above": 10,
+    "large_party_channels": ["phone"]
+  },
+  "third_party_restrictions": {
+    "no_resale": true,
+    "no_transfer": true,
+    "identity_bound_booking": true
+  },
+  "deposit_policy": {
+    "required": true,
+    "amount": 50,
+    "currency": "USD",
+    "refundable": false
+  },
+  "cancellation_policy": {
+    "penalty_applies": true,
+    "window_minutes": 1440,
+    "penalty_amount": 25,
+    "currency": "USD"
+  },
+  "no_show_policy": {
+    "fee": 50,
+    "currency": "USD",
+    "grace_period_minutes": 15
+  },
+  "user_acknowledgment_requirements": ["deposit_policy", "cancellation_policy", "no_show_policy"],
+  "complaint_endpoint": "https://sdk-test-bistro.example.com/complaints"
+}
