@@ -160,5 +160,17 @@
       "format": "uri",
       "pattern": "^https://"
     }
+  },
+  "$defs": {
+    "action_type": {
+      "type": "string",
+      "description": "Shared vocabulary of agent action types. Referenced by fields like rate_limits.applies_to.",
+      "enum": [
+        "check_availability",
+        "create_booking",
+        "modify_booking",
+        "cancel_booking"
+      ]
+    }
   }
 }
