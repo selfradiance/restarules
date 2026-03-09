@@ -1,0 +1,28 @@
+{
+  "name": "restarules-sdk",
+  "version": "0.2.0",
+  "description": "Validate and evaluate AI agent compliance against RestaRules venue conduct rules",
+  "type": "commonjs",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "scripts": {
+    "test": "echo \"Tests will be added in Step 5\" && exit 0"
+  },
+  "keywords": [
+    "restarules",
+    "ai-agent",
+    "restaurant",
+    "compliance",
+    "venue-rules"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/selfradiance/restarules.git"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "ajv": "^8.12.0"
+  }
+}
