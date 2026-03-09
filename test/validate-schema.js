@@ -5,6 +5,7 @@ const example = require('../schema/agent-venue-rules-example.json');
 const partySizeFixture = require('./fixtures/test-venue-with-party-size-policy.json');
 const depositFixture = require('./fixtures/test-venue-with-deposit.json');
 const cancellationFixture = require('./fixtures/test-venue-with-cancellation.json');
+const noShowFixture = require('./fixtures/test-venue-with-no-show.json');
 
 const ajv = new Ajv();
 addFormats(ajv);
@@ -119,6 +120,39 @@ if (!validNegativeWindow) {
   console.log('PASS: cancellation_policy with negative window_minutes correctly fails validation.');
 } else {
   console.error('FAIL: cancellation_policy with negative window_minutes should have failed validation.');
+  failed = true;
+}
+
+// Test 11: fixture with valid no_show_policy validates
+const validNoShow = validate(noShowFixture);
+if (validNoShow) {
+  console.log('PASS: Fixture with no_show_policy validates against schema.');
+} else {
+  for (const error of validate.errors) {
+    console.error('FAIL:', error.instancePath, error.message);
+  }
+  failed = true;
+}
+
+// Test 12: no_show_policy missing fee fails validation
+const missingFee = JSON.parse(JSON.stringify(noShowFixture));
+missingFee.no_show_policy = { grace_period_minutes: 15 };
+const validMissingFee = validate(missingFee);
+if (!validMissingFee) {
+  console.log('PASS: no_show_policy missing fee correctly fails validation.');
+} else {
+  console.error('FAIL: no_show_policy missing fee should have failed validation.');
+  failed = true;
+}
+
+// Test 13: no_show_policy with grace_period_minutes: -10 fails validation (minimum is 0)
+const negativeGrace = JSON.parse(JSON.stringify(noShowFixture));
+negativeGrace.no_show_policy.grace_period_minutes = -10;
+const validNegativeGrace = validate(negativeGrace);
+if (!validNegativeGrace) {
+  console.log('PASS: no_show_policy with negative grace_period_minutes correctly fails validation.');
+} else {
+  console.error('FAIL: no_show_policy with negative grace_period_minutes should have failed validation.');
   failed = true;
 }
 

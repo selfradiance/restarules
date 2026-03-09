@@ -243,6 +243,29 @@
           "description": "Specific channels for large party inquiries."
         }
       }
+    },
+    "no_show_policy": {
+      "type": "object",
+      "description": "Venue no-show terms. Informational field — describes consequences for user awareness, never blocks agent actions.",
+      "required": ["fee"],
+      "additionalProperties": false,
+      "properties": {
+        "fee": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Fee charged for a no-show."
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "ISO 4217 currency code. Defaults to venue_currency if omitted."
+        },
+        "grace_period_minutes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Minutes after reservation time before a no-show is declared."
+        }
+      }
     }
   },
   "$defs": {
