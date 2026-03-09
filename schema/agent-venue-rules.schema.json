@@ -169,6 +169,32 @@
       "type": "string",
       "description": "IANA timezone identifier for the venue (e.g. \"America/New_York\", \"Europe/London\").",
       "minLength": 1
+    },
+    "party_size_policy": {
+      "type": "object",
+      "description": "Defines party-size thresholds for automated booking vs human review.",
+      "required": ["auto_book_max"],
+      "additionalProperties": false,
+      "properties": {
+        "auto_book_max": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Largest party size an agent can book without human review."
+        },
+        "human_review_above": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Party sizes above this number require human involvement."
+        },
+        "large_party_channels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["phone", "web", "sms", "email", "app"]
+          },
+          "description": "Specific channels for large party inquiries."
+        }
+      }
     }
   },
   "$defs": {
