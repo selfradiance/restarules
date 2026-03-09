@@ -4,6 +4,7 @@ const schema = require('../schema/agent-venue-rules.schema.json');
 const example = require('../schema/agent-venue-rules-example.json');
 const partySizeFixture = require('./fixtures/test-venue-with-party-size-policy.json');
 const depositFixture = require('./fixtures/test-venue-with-deposit.json');
+const cancellationFixture = require('./fixtures/test-venue-with-cancellation.json');
 
 const ajv = new Ajv();
 addFormats(ajv);
@@ -85,6 +86,39 @@ if (!validNegative) {
   console.log('PASS: deposit_policy with negative amount correctly fails validation.');
 } else {
   console.error('FAIL: deposit_policy with negative amount should have failed validation.');
+  failed = true;
+}
+
+// Test 8: fixture with valid cancellation_policy validates
+const validCancellation = validate(cancellationFixture);
+if (validCancellation) {
+  console.log('PASS: Fixture with cancellation_policy validates against schema.');
+} else {
+  for (const error of validate.errors) {
+    console.error('FAIL:', error.instancePath, error.message);
+  }
+  failed = true;
+}
+
+// Test 9: cancellation_policy missing penalty_applies fails validation
+const missingPenalty = JSON.parse(JSON.stringify(cancellationFixture));
+missingPenalty.cancellation_policy = { window_minutes: 1440 };
+const validMissingPenalty = validate(missingPenalty);
+if (!validMissingPenalty) {
+  console.log('PASS: cancellation_policy missing penalty_applies correctly fails validation.');
+} else {
+  console.error('FAIL: cancellation_policy missing penalty_applies should have failed validation.');
+  failed = true;
+}
+
+// Test 10: cancellation_policy with window_minutes: -60 fails validation (minimum is 0)
+const negativeWindow = JSON.parse(JSON.stringify(cancellationFixture));
+negativeWindow.cancellation_policy.window_minutes = -60;
+const validNegativeWindow = validate(negativeWindow);
+if (!validNegativeWindow) {
+  console.log('PASS: cancellation_policy with negative window_minutes correctly fails validation.');
+} else {
+  console.error('FAIL: cancellation_policy with negative window_minutes should have failed validation.');
   failed = true;
 }
 
