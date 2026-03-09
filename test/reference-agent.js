@@ -84,5 +84,59 @@ assert(
   t8.complaintEndpoint === null && t8.channel.result === "ALLOWED"
 );
 
+// Test 9: deposit_policy is surfaced when present (permission field)
+const depositRules = require("./fixtures/test-venue-with-acknowledgment.json");
+const t9 = evaluateCompliance(depositRules, { channel: "phone" });
+assert(
+  "deposit_policy is surfaced with required=true, amount=50",
+  t9.depositPolicy.defined === true && t9.depositPolicy.required === true && t9.depositPolicy.amount === 50
+);
+
+// Test 10: deposit_policy absent with deny_if_unspecified → DENIED_DEFAULT_POLICY
+const t10 = evaluateCompliance(rules);
+assert(
+  "deposit_policy absent with deny_if_unspecified → DENIED_DEFAULT_POLICY",
+  t10.depositPolicy.defined === false && t10.depositPolicy.defaultPolicyResult === "DENIED_DEFAULT_POLICY"
+);
+
+// Test 11: user_acknowledgment_requirements surfaced when present
+assert(
+  "user_acknowledgment_requirements lists 3 policies",
+  t9.userAcknowledgmentRequirements.defined === true && t9.userAcknowledgmentRequirements.policies.length === 3
+);
+
+// Test 12: cancellation_policy surfaced as informational (never blocks)
+assert(
+  "cancellation_policy is surfaced with penaltyApplies=true",
+  t9.cancellationPolicy.defined === true && t9.cancellationPolicy.penaltyApplies === true
+);
+
+// Test 13: no_show_policy surfaced as informational (never blocks)
+assert(
+  "no_show_policy is surfaced with fee=100",
+  t9.noShowPolicy.defined === true && t9.noShowPolicy.fee === 100
+);
+
+// Test 14: cancellation_policy absent does not produce DENY (informational, not permission)
+assert(
+  "cancellation_policy absent just returns defined=false (no DENIED_DEFAULT_POLICY)",
+  t10.cancellationPolicy.defined === false && t10.cancellationPolicy.defaultPolicyResult === undefined
+);
+
+// Test 15: venue metadata surfaced when present
+const goldenFork = require("../schema/agent-venue-rules-example.json");
+const t15 = evaluateCompliance(goldenFork);
+assert(
+  "venue metadata surfaces currency=USD and timezone=America/New_York",
+  t15.venueMetadata.currency === "USD" && t15.venueMetadata.timezone === "America/New_York"
+);
+
+// Test 16: applies_to metadata surfaced on rate limit result
+const t16 = evaluateCompliance(goldenFork, { action: "booking_request", attempts: 1 });
+assert(
+  "rate limit result includes appliesTo metadata",
+  t16.rateLimit.appliesTo !== null && t16.rateLimit.appliesTo.includes("create_booking")
+);
+
 console.log(`\nReference agent tests: ${passed} passed, ${failed} failed.`);
 if (failed > 0) process.exit(1);

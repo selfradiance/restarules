@@ -256,4 +256,106 @@ try {
   process.exit(1);
 }
 
+// Test 13: deposit_required is surfaced in CLI output (Golden Fork has deposit_policy)
+try {
+  const output = run("--channel phone --disclosed true");
+  if (output.includes("deposit_required")) {
+    console.log(
+      "PASS: deposit_required is surfaced in CLI output when deposit_policy present"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected deposit_required to appear in output"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on deposit_required test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
+// Test 14: user_acknowledgment_required is surfaced in CLI output
+try {
+  const output = run("--channel phone --disclosed true");
+  if (output.includes("user_acknowledgment_required") && output.includes("deposit_policy")) {
+    console.log(
+      "PASS: user_acknowledgment_required is surfaced with policy names"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected user_acknowledgment_required with policy names in output"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on user_acknowledgment test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
+// Test 15: cancellation_penalty is surfaced in CLI output (informational)
+try {
+  const output = run("--channel phone --disclosed true");
+  if (output.includes("cancellation_penalty")) {
+    console.log(
+      "PASS: cancellation_penalty is surfaced in CLI output"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected cancellation_penalty to appear in output"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on cancellation_penalty test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
+// Test 16: no_show_fee is surfaced in CLI output (informational)
+try {
+  const output = run("--channel phone --disclosed true");
+  if (output.includes("no_show_fee")) {
+    console.log(
+      "PASS: no_show_fee is surfaced in CLI output"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected no_show_fee to appear in output"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on no_show_fee test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
+// Test 17: DENY — deposit_policy absent with deny_if_unspecified
+try {
+  const noDepositRules = path.join(__dirname, "fixtures", "test-venue-with-no-show.json");
+  const cmd = `node ${cliPath} --rules ${noDepositRules} --channel phone --disclosed true`;
+  const output = execSync(cmd, { encoding: "utf8" });
+  if (output.includes("DENY") && output.includes("deposit_policy is absent")) {
+    console.log(
+      "PASS: Missing deposit_policy with deny_if_unspecified produces DENY"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected DENY with deposit_policy absence reason"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on deposit_policy absence test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
 console.log("\nAll compliance checker tests passed.");

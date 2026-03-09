@@ -53,7 +53,7 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
     ? rules.human_escalation_required.conditions
     : [];
 
-  // 4. Rate limits
+  // 4. Rate limits (with applies_to metadata support)
   if (action !== null && attempts !== null) {
     if (rules.rate_limits) {
       const match = rules.rate_limits.find((r) => r.action === action);
@@ -63,6 +63,7 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
           limit: match.limit,
           windowValue: match.window_value,
           windowUnit: match.window_unit,
+          appliesTo: match.applies_to || null,
         };
       } else {
         result.rateLimit = {
@@ -96,6 +97,66 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
 
   // 6. Complaint endpoint
   result.complaintEndpoint = rules.complaint_endpoint || null;
+
+  // 7. Venue metadata (informational — never blocks actions)
+  result.venueMetadata = {
+    currency: rules.venue_currency || null,
+    timezone: rules.venue_timezone || null,
+  };
+
+  // 8. Deposit policy (permission field — governed by default_policy)
+  if (rules.deposit_policy) {
+    result.depositPolicy = {
+      defined: true,
+      required: rules.deposit_policy.required,
+      amount: rules.deposit_policy.amount || null,
+      currency: rules.deposit_policy.currency || null,
+      refundable: rules.deposit_policy.refundable !== undefined ? rules.deposit_policy.refundable : null,
+    };
+  } else {
+    result.depositPolicy = {
+      defined: false,
+      defaultPolicyResult: dp === "allow_if_unspecified" ? "ALLOWED" : "DENIED_DEFAULT_POLICY",
+    };
+  }
+
+  // 9. User acknowledgment requirements (permission field — governed by default_policy)
+  if (rules.user_acknowledgment_requirements) {
+    result.userAcknowledgmentRequirements = {
+      defined: true,
+      policies: rules.user_acknowledgment_requirements,
+    };
+  } else {
+    result.userAcknowledgmentRequirements = {
+      defined: false,
+      defaultPolicyResult: dp === "allow_if_unspecified" ? "ALLOWED" : "DENIED_DEFAULT_POLICY",
+    };
+  }
+
+  // 10. Cancellation policy (informational — never blocks actions)
+  if (rules.cancellation_policy) {
+    result.cancellationPolicy = {
+      defined: true,
+      penaltyApplies: rules.cancellation_policy.penalty_applies,
+      windowMinutes: rules.cancellation_policy.window_minutes || null,
+      penaltyAmount: rules.cancellation_policy.penalty_amount || null,
+      currency: rules.cancellation_policy.currency || null,
+    };
+  } else {
+    result.cancellationPolicy = { defined: false };
+  }
+
+  // 11. No-show policy (informational — never blocks actions)
+  if (rules.no_show_policy) {
+    result.noShowPolicy = {
+      defined: true,
+      fee: rules.no_show_policy.fee,
+      currency: rules.no_show_policy.currency || null,
+      gracePeriodMinutes: rules.no_show_policy.grace_period_minutes || null,
+    };
+  } else {
+    result.noShowPolicy = { defined: false };
+  }
 
   return result;
 }

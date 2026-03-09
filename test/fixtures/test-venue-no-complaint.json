@@ -8,5 +8,9 @@
   "disclosure_required": {
     "enabled": false
   },
-  "allowed_channels": ["phone", "web"]
+  "allowed_channels": ["phone", "web"],
+  "deposit_policy": {
+    "required": false
+  },
+  "user_acknowledgment_requirements": []
 }

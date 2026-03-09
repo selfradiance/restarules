@@ -119,7 +119,7 @@ if (rules.allowed_channels) {
   );
 }
 
-// Check 3: rate_limits (Decision Procedure step 4)
+// Check 3: rate_limits with applies_to metadata (Decision Procedure step 4)
 if (rules.rate_limits) {
   if (args.action !== undefined && args["attempt-count"] !== undefined) {
     const action = args.action;
@@ -190,8 +190,24 @@ if (rules.third_party_restrictions) {
   );
 }
 
-// complaint_endpoint is informational — not a permission field.
-// Its presence or absence never blocks agent actions and is not governed by default_policy.
+// Check 6: deposit_policy (permission field — governed by default_policy)
+if (rules.deposit_policy) {
+  if (rules.deposit_policy.required) {
+    // Deposit is required — agent must collect before booking. Not a denial, but noted.
+  }
+} else if (rules.default_policy === "deny_if_unspecified") {
+  reasons.push("deposit_policy is absent and default_policy is deny_if_unspecified");
+}
+
+// Check 7: user_acknowledgment_requirements (permission field — governed by default_policy)
+if (rules.user_acknowledgment_requirements) {
+  // Policies the agent must confirm with the user before acting — noted in output.
+} else if (rules.default_policy === "deny_if_unspecified") {
+  reasons.push("user_acknowledgment_requirements is absent and default_policy is deny_if_unspecified");
+}
+
+// cancellation_policy, no_show_policy, and complaint_endpoint are informational fields.
+// Their presence or absence never blocks agent actions and is not governed by default_policy.
 // Presence is surfaced in output below.
 
 // --- Output result ---
@@ -204,6 +220,27 @@ if (reasons.length === 0) {
   console.log("DENY");
   console.log("reasons:");
   reasons.forEach((r) => console.log(`  - ${r}`));
+}
+
+if (rules.deposit_policy && rules.deposit_policy.required) {
+  const dp = rules.deposit_policy;
+  console.log(`deposit_required: ${dp.amount} ${dp.currency || ""}${dp.refundable ? " (refundable)" : " (non-refundable)"}`);
+}
+
+if (rules.user_acknowledgment_requirements && rules.user_acknowledgment_requirements.length > 0) {
+  console.log(`user_acknowledgment_required: ${rules.user_acknowledgment_requirements.join(", ")}`);
+}
+
+if (rules.cancellation_policy) {
+  const cp = rules.cancellation_policy;
+  if (cp.penalty_applies) {
+    console.log(`cancellation_penalty: ${cp.penalty_amount} ${cp.currency || ""} (window: ${cp.window_minutes} minutes)`);
+  }
+}
+
+if (rules.no_show_policy) {
+  const nsp = rules.no_show_policy;
+  console.log(`no_show_fee: ${nsp.fee} ${nsp.currency || ""} (grace: ${nsp.grace_period_minutes || 0} minutes)`);
 }
 
 if (rules.complaint_endpoint) {
