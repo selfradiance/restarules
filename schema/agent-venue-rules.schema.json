@@ -266,6 +266,19 @@
           "description": "Minutes after reservation time before a no-show is declared."
         }
       }
+    },
+    "user_acknowledgment_requirements": {
+      "type": "array",
+      "description": "Policies the agent must confirm the user is aware of before acting. Permission field — governed by default_policy when absent.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "deposit_policy",
+          "cancellation_policy",
+          "no_show_policy"
+        ]
+      },
+      "uniqueItems": true
     }
   },
   "$defs": {

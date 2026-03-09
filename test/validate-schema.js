@@ -6,6 +6,7 @@ const partySizeFixture = require('./fixtures/test-venue-with-party-size-policy.j
 const depositFixture = require('./fixtures/test-venue-with-deposit.json');
 const cancellationFixture = require('./fixtures/test-venue-with-cancellation.json');
 const noShowFixture = require('./fixtures/test-venue-with-no-show.json');
+const acknowledgmentFixture = require('./fixtures/test-venue-with-acknowledgment.json');
 
 const ajv = new Ajv();
 addFormats(ajv);
@@ -153,6 +154,39 @@ if (!validNegativeGrace) {
   console.log('PASS: no_show_policy with negative grace_period_minutes correctly fails validation.');
 } else {
   console.error('FAIL: no_show_policy with negative grace_period_minutes should have failed validation.');
+  failed = true;
+}
+
+// Test 14: fixture with valid user_acknowledgment_requirements validates
+const validAck = validate(acknowledgmentFixture);
+if (validAck) {
+  console.log('PASS: Fixture with user_acknowledgment_requirements validates against schema.');
+} else {
+  for (const error of validate.errors) {
+    console.error('FAIL:', error.instancePath, error.message);
+  }
+  failed = true;
+}
+
+// Test 15: user_acknowledgment_requirements with invalid policy name fails validation
+const invalidPolicy = JSON.parse(JSON.stringify(acknowledgmentFixture));
+invalidPolicy.user_acknowledgment_requirements = ["fake_policy"];
+const validInvalidPolicy = validate(invalidPolicy);
+if (!validInvalidPolicy) {
+  console.log('PASS: user_acknowledgment_requirements with invalid policy name correctly fails validation.');
+} else {
+  console.error('FAIL: user_acknowledgment_requirements with invalid policy name should have failed validation.');
+  failed = true;
+}
+
+// Test 16: user_acknowledgment_requirements with duplicate entries fails validation
+const duplicateEntries = JSON.parse(JSON.stringify(acknowledgmentFixture));
+duplicateEntries.user_acknowledgment_requirements = ["deposit_policy", "deposit_policy"];
+const validDuplicate = validate(duplicateEntries);
+if (!validDuplicate) {
+  console.log('PASS: user_acknowledgment_requirements with duplicate entries correctly fails validation.');
+} else {
+  console.error('FAIL: user_acknowledgment_requirements with duplicate entries should have failed validation.');
   failed = true;
 }
 
