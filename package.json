@@ -1,8 +1,8 @@
 {
   "name": "restarules",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Machine-readable agent conduct rules for restaurants",
+  "main": "cli/check.js",
   "scripts": {
     "test": "node test/validate-schema.js && node test/check-compliance.js && node test/reference-agent.js && node test/sdk-exports.js",
     "build:demo": "esbuild demo/voice/sdk-entry.js --bundle --outfile=demo/voice/bundle.js --format=iife --platform=browser"
