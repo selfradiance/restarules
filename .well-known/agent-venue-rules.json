@@ -12,6 +12,14 @@
     "phrasing": "I am an AI assistant calling on behalf of a guest."
   },
   "allowed_channels": ["phone", "web"],
+  "rate_limits": [
+    {
+      "action": "booking_request",
+      "limit": 5,
+      "window_value": 1,
+      "window_unit": "hour"
+    }
+  ],
   "human_escalation_required": {
     "conditions": ["reservation_modification"]
   },
@@ -24,5 +32,17 @@
     "currency": "USD",
     "refundable": true
   },
+  "cancellation_policy": {
+    "penalty_applies": true,
+    "window_minutes": 1440,
+    "penalty_amount": 25,
+    "currency": "USD"
+  },
+  "no_show_policy": {
+    "fee": 50,
+    "currency": "USD",
+    "grace_period_minutes": 15
+  },
+  "user_acknowledgment_requirements": ["deposit_policy", "cancellation_policy", "no_show_policy"],
   "complaint_endpoint": "https://bellanotte-demo.example.com/agent-complaints"
 }
