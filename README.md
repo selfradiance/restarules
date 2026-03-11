@@ -269,3 +269,11 @@ The `sdk/` directory contains `restarules-sdk`, an npm package that lets develop
 ```
 npm install restarules-sdk
 ```
+
+## Browser Voice Demo
+
+A browser-based demo that proves the RestaRules thesis end-to-end: an AI agent fetches the live Bella Notte rules file from GitHub Pages, evaluates compliance for five booking scenarios using the real SDK, and speaks the results aloud using the Web Speech API. No external accounts, no server hosting — runs entirely in the browser.
+
+**Try it:** [https://selfradiance.github.io/restarules/demo/voice/](https://selfradiance.github.io/restarules/demo/voice/)
+
+The demo includes five scenarios: disclosure check, booking a small party (allowed), booking a large party (escalated to human), deposit and acknowledgment requirements, and cancellation/no-show terms. Each scenario shows a rule trace of which fields the agent evaluated, the triggered rules with actual values from the fetched file, and a plain-English result that can be read aloud by the browser's speech engine.
