@@ -25,6 +25,7 @@
   var speakBtn = document.getElementById("speak-btn");
   var transcriptEl = document.getElementById("transcript");
   var transcriptTextEl = document.getElementById("transcript-text");
+  var speechUnavailableEl = document.getElementById("speech-unavailable");
 
   // ============================================================
   // UI helpers
@@ -322,6 +323,7 @@
   function initSpeech() {
     if (!("speechSynthesis" in window)) {
       console.log("Speech synthesis not available in this browser");
+      speechUnavailableEl.style.display = "block";
       return;
     }
 
