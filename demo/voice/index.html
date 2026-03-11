@@ -4,18 +4,322 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RestaRules Voice Demo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 24px;
+      color: #1a1a1a;
+      background: #fafafa;
+      line-height: 1.5;
+    }
+
+    header {
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    header h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      color: #555;
+      font-size: 14px;
+    }
+
+    /* Rules source area */
+    #rules-source {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    #rules-source .label {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #888;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    #rules-source .venue-name {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    #rules-source .url {
+      font-size: 12px;
+      color: #666;
+      word-break: break-all;
+    }
+
+    #rules-source .status {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #888;
+    }
+
+    /* Scenario buttons */
+    #scenarios {
+      margin-bottom: 20px;
+    }
+
+    #scenarios h2 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      color: #333;
+    }
+
+    .scenario-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .scenario-btn {
+      padding: 10px 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      color: #333;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .scenario-btn:hover:not(:disabled) {
+      background: #f0f0f0;
+      border-color: #999;
+    }
+
+    .scenario-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .scenario-btn.active {
+      background: #e8f0fe;
+      border-color: #4285f4;
+      color: #1a73e8;
+    }
+
+    /* Rule trace panel */
+    #rule-trace {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    #rule-trace h3 {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 12px;
+    }
+
+    #rule-trace .trace-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    #rule-trace .trace-list li {
+      padding: 6px 0;
+      font-size: 13px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #rule-trace .trace-list li:last-child {
+      border-bottom: none;
+    }
+
+    .trace-icon {
+      width: 18px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    /* Result panel */
+    #result {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    #result h3 {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 8px;
+    }
+
+    #result .result-verdict {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    #result .result-verdict.allowed { color: #0d7d0d; }
+    #result .result-verdict.denied { color: #c62828; }
+    #result .result-verdict.escalate { color: #e65100; }
+    #result .result-verdict.info { color: #1565c0; }
+
+    #result .result-explanation {
+      font-size: 14px;
+      color: #333;
+    }
+
+    /* Triggered rules */
+    #triggered-rules {
+      background: #f8f8f8;
+      border: 1px solid #eee;
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    #triggered-rules h4 {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #888;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    #triggered-rules .rule-item {
+      font-size: 13px;
+      font-family: "SF Mono", "Fira Code", monospace;
+      color: #555;
+      padding: 3px 0;
+    }
+
+    /* Speak button */
+    #speak-controls {
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    #speak-btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      background: #1a73e8;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    #speak-btn:hover:not(:disabled) {
+      background: #1557b0;
+    }
+
+    #speak-btn:disabled {
+      background: #a0c4f1;
+      cursor: not-allowed;
+    }
+
+    /* Transcript */
+    #transcript {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      display: none;
+    }
+
+    #transcript h3 {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 8px;
+    }
+
+    #transcript .transcript-text {
+      font-size: 14px;
+      color: #333;
+      font-style: italic;
+    }
+
+    /* Voice quality disclaimer */
+    .disclaimer {
+      margin-top: 24px;
+      padding: 12px;
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #6d4c00;
+    }
+  </style>
 </head>
 <body>
-  <h1>RestaRules Voice Demo</h1>
-  <p id="status">Loading SDK...</p>
+  <header>
+    <h1>RestaRules Voice Demo</h1>
+    <p>An AI agent fetches a restaurant's live rules file, evaluates compliance for booking scenarios, and speaks the results. Select a scenario below to see the agent in action.</p>
+  </header>
+
+  <div id="rules-source">
+    <div class="label">Rules Source</div>
+    <div class="venue-name" id="venue-name">Loading...</div>
+    <div class="url" id="rules-url"></div>
+    <div class="status" id="rules-status">Fetching rules file...</div>
+  </div>
+
+  <div id="scenarios">
+    <h2>Scenarios</h2>
+    <div class="scenario-grid">
+      <button class="scenario-btn" id="btn-scenario-1" disabled>1. Disclosure Check</button>
+      <button class="scenario-btn" id="btn-scenario-2" disabled>2. Book for 4 (phone)</button>
+      <button class="scenario-btn" id="btn-scenario-3" disabled>3. Book for 12 (phone)</button>
+      <button class="scenario-btn" id="btn-scenario-4" disabled>4. Deposit Required</button>
+      <button class="scenario-btn" id="btn-scenario-5" disabled>5. Cancellation &amp; No-Show</button>
+    </div>
+  </div>
+
+  <div id="rule-trace">
+    <h3>Agent Rule Trace</h3>
+    <ul class="trace-list" id="trace-list"></ul>
+  </div>
+
+  <div id="result">
+    <h3>Decision</h3>
+    <div class="result-verdict" id="result-verdict"></div>
+    <div class="result-explanation" id="result-explanation"></div>
+    <div id="triggered-rules">
+      <h4>Triggered Rules</h4>
+      <div id="triggered-rules-list"></div>
+    </div>
+  </div>
+
+  <div id="speak-controls">
+    <button id="speak-btn" disabled>Speak Result</button>
+  </div>
+
+  <div id="transcript">
+    <h3>Transcript</h3>
+    <div class="transcript-text" id="transcript-text"></div>
+  </div>
+
+  <div class="disclaimer">
+    This demo uses your browser's built-in speech engine to demonstrate the protocol. Voice quality varies by browser and OS. The purpose is to show that an agent can fetch, parse, and obey venue rules — not to showcase voice quality.
+  </div>
+
   <script src="bundle.js"></script>
-  <script>
-    if (window.RestaRulesSDK) {
-      document.getElementById("status").textContent = "SDK loaded — validateRules: " + typeof window.RestaRulesSDK.validateRules + ", evaluateCompliance: " + typeof window.RestaRulesSDK.evaluateCompliance;
-      console.log("SDK loaded successfully", window.RestaRulesSDK);
-    } else {
-      document.getElementById("status").textContent = "ERROR: SDK failed to load";
-    }
-  </script>
+  <script src="app.js"></script>
 </body>
 </html>
