@@ -83,7 +83,7 @@ The schema lives in `schema/`:
 - `agent-venue-rules.schema.json` — Formal JSON Schema (Draft 2020-12). This is the source of truth for what a valid rules file looks like.
 - `agent-venue-rules-example.json` — A complete example file for a fictional restaurant (The Golden Fork).
 
-The project includes two example venues: **The Golden Fork** (`schema/agent-venue-rules-example.json`) is a comprehensive reference example showing all available fields. **Bella Notte Trattoria** (`.well-known/agent-venue-rules.json`) is the live demo — a realistic minimal file served via GitHub Pages at the `/.well-known/` URL.
+The project includes two example venues: **The Golden Fork** (`schema/agent-venue-rules-example.json`) is a comprehensive reference example showing all available fields. **Bella Notte Trattoria** (`.well-known/agent-venue-rules.json`) is the live demo — a near-complete v0.2 file served via GitHub Pages at the `/.well-known/` URL.
 
 ### Required Fields
 
@@ -206,7 +206,7 @@ A demo rules file is hosted via GitHub Pages at:
 https://selfradiance.github.io/restarules/.well-known/agent-venue-rules.json
 ```
 
-This demonstrates the `/.well-known/` hosting pattern using a fictional restaurant (Bella Notte Trattoria). The demo file includes v0.2 fields (`party_size_policy`, `deposit_policy`, `venue_currency`, `venue_timezone`) and uses `default_policy: "deny_if_unspecified"`, showing how the default policy governs absent permission fields in practice.
+This demonstrates the `/.well-known/` hosting pattern using a fictional restaurant (Bella Notte Trattoria). The demo file is a near-complete v0.2 example including all required fields plus `rate_limits`, `human_escalation_required`, `party_size_policy`, `deposit_policy`, `cancellation_policy`, `no_show_policy`, `user_acknowledgment_requirements`, `complaint_endpoint`, `venue_currency`, and `venue_timezone`. It uses `default_policy: "deny_if_unspecified"` with only `third_party_restrictions` omitted, showing how the default policy governs that single absent permission field.
 
 ## Hosting Your Own Rules File
 
