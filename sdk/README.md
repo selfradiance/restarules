@@ -6,16 +6,26 @@ Validate and evaluate AI agent compliance against RestaRules venue conduct rules
 
 RestaRules is an open standard that lets restaurants publish machine-readable conduct rules for AI agents. Restaurants host a JSON file at `/.well-known/agent-venue-rules.json` defining what AI agents are and aren't allowed to do — disclosure requirements, allowed channels, rate limits, party size policies, deposit requirements, and more. This SDK lets developers validate those rules files and evaluate whether a proposed agent action is compliant.
 
-## Install
+## Installation
 
+The SDK is not yet published to npm. To use it locally:
+
+```bash
+git clone https://github.com/selfradiance/restarules.git
+cd restarules/sdk
+npm install
 ```
-npm install restarules-sdk
+
+Then reference it from your project:
+
+```javascript
+const { validateRules, evaluateCompliance } = require('./path/to/restarules/sdk');
 ```
 
 ## Quick Start
 
 ```js
-const { validateRules, evaluateCompliance } = require("restarules-sdk");
+const { validateRules, evaluateCompliance } = require("./path/to/restarules/sdk");
 
 // 1. Validate a rules file
 const rules = {
