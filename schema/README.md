@@ -1,99 +1,74 @@
-# RestaRules Schema v0.1
+# RestaRules Schema
 
-This folder contains the formal schema definition and an example file for RestaRules agent venue rules.
+This folder contains the formal schema definition and example files for RestaRules agent venue rules.
 
 ## Files
 
-- `agent-venue-rules.schema.json` — The formal JSON Schema definition (Draft 2020-12). This is the source of truth for what a valid rules file looks like.
-- `agent-venue-rules-example.json` — A complete example file for a fictional restaurant (The Golden Fork).
+- `agent-venue-rules.schema.json` — The formal JSON Schema definition (Draft 2020-12). This is the source of truth for what a valid rules file looks like. Current version: v0.2.
+- `agent-venue-rules-example.json` — A complete example file for a fictional restaurant (The Golden Fork), demonstrating all available fields.
 
-## Required vs Optional Fields
+## Schema Version
 
-A valid rules file **must** include these 8 fields:
+The current schema version is **0.2**. The `schema_version` field accepts both `"0.1"` and `"0.2"` for backward compatibility.
 
-- `schema_version` — Must be `"0.1"` for this version
+## Required Fields (8)
+
+- `schema_version` — `"0.1"` or `"0.2"`
 - `venue_name` — The restaurant's name
-- `venue_url` — The restaurant's website
+- `venue_url` — The restaurant's website (HTTPS required)
 - `last_updated` — When the file was last edited (YYYY-MM-DD)
 - `effective_at` — When the rules take effect (YYYY-MM-DD)
-- `default_policy` — Either `"deny_if_unspecified"` or `"allow_if_unspecified"`
+- `default_policy` — `"deny_if_unspecified"` or `"allow_if_unspecified"`
 - `disclosure_required` — Whether AI agents must identify themselves before interacting
-- `allowed_channels` — Which communication channels the venue permits agents to use
+- `allowed_channels` — Which communication channels the venue permits (`phone`, `web`, `sms`, `email`, `app`)
 
-The remaining 4 fields are **optional**:
+## Optional Fields — Permission (governed by `default_policy`)
+
+These fields control whether an agent action is allowed. When absent, agents consult `default_policy`.
 
 - `rate_limits` — How frequently a single agent may perform specific actions
-- `human_escalation_required` — Party size threshold and conditions requiring human handoff
+- `human_escalation_required` — Non-party-size conditions requiring human handoff (e.g., `reservation_modification`)
 - `third_party_restrictions` — Rules on resale, transfer, and identity-bound bookings
-- `complaint_endpoint` — URL for reporting agent misbehavior to the venue
+- `party_size_policy` — Party-size thresholds for auto-booking vs human review (`auto_book_max` required, plus optional `human_review_above` and `large_party_channels`)
+- `deposit_policy` — Deposit requirements for reservations (`required` boolean, plus optional `amount`, `currency`, `refundable`)
+- `user_acknowledgment_requirements` — Array of policy names the agent must confirm with the user before completing a booking
 
-A venue includes only the optional rules it wants to set. The `default_policy` field tells agents what to assume for everything not explicitly covered.
+## Optional Fields — Informational (not governed by `default_policy`)
 
-## Field Classifications: Permission vs Informational
+These fields describe venue terms. Their absence never blocks agent actions.
 
-Every field in the schema is classified as either a **permission field** or an **informational field**:
+- `complaint_endpoint` — URL for reporting agent misbehavior
+- `cancellation_policy` — Cancellation terms (`penalty_applies` required, plus optional `window_minutes`, `penalty_amount`, `currency`)
+- `no_show_policy` — No-show terms (`fee` required, plus optional `currency`, `grace_period_minutes`)
 
-- **Permission fields** govern whether an agent action is allowed. When a permission field is absent, agents consult `default_policy` to decide whether the action is permitted.
-- **Informational fields** describe venue terms or metadata. Absence of an informational field never blocks an agent action and is not governed by `default_policy`.
+## Optional Fields — Metadata
 
-### Permission fields (governed by default_policy)
+- `venue_currency` — ISO 4217 currency code (e.g., `"USD"`)
+- `venue_timezone` — IANA timezone identifier (e.g., `"America/New_York"`)
 
-| Field | Version |
-|-------|---------|
-| `disclosure_required` | v0.1 |
-| `allowed_channels` | v0.1 |
-| `rate_limits` | v0.1 |
-| `human_escalation_required` | v0.1 |
-| `third_party_restrictions` | v0.1 |
-| `party_size_policy` | Planned for v0.2 |
-| `deposit_policy` | Planned for v0.2 |
-| `user_acknowledgment_requirements` | Planned for v0.2 |
+## Shared Definitions (`$defs`)
 
-### Informational fields (never block agent actions)
+- `action_type` — Enum of agent action types: `check_availability`, `create_booking`, `modify_booking`, `cancel_booking`. Used by `rate_limits[].applies_to` to scope rate limit rules to specific actions.
 
-| Field | Version |
-|-------|---------|
-| `complaint_endpoint` | v0.1 |
-| `venue_currency` | v0.2 |
-| `venue_timezone` | v0.2 |
-| `cancellation_policy` | Planned for v0.2 |
-| `no_show_policy` | Planned for v0.2 |
+## Field Classifications
 
-This classification was established in Session 12 and is a core design principle of the schema.
+Every optional field is classified as either **permission** or **informational**:
 
-## v0.2 Migration: Party-Size Policy
+- **Permission fields** govern whether an agent action is allowed. When absent, agents consult `default_policy` to decide.
+- **Informational fields** describe venue terms for user awareness. Their absence never blocks actions and is not governed by `default_policy`.
 
-In v0.1, party-size logic lives inside `human_escalation_required` (specifically the `party_size_auto_max` field). In v0.2, this is being replaced by a dedicated top-level `party_size_policy` object.
-
-### What's changing
-
-- The `party_size_auto_max` field currently inside `human_escalation_required` is being replaced by a new top-level `party_size_policy` object.
-- `human_escalation_required` will keep its non-party-size triggers (e.g. `reservation_modification`) but will no longer contain party-size thresholds.
-
-### New `party_size_policy` field (planned structure)
-
-- `auto_book_max` (integer) — Largest party size an agent can book without human review.
-- `human_review_above` (integer) — Party sizes above this require human involvement.
-- `large_party_channels` (array, optional) — Specific channels for large party inquiries (e.g. `["phone", "email"]`).
-
-### What `human_escalation_required` keeps
-
-- `conditions` array — Non-party-size triggers like `reservation_modification`, `special_event_booking`, `complaint_or_dispute`, `accessibility_request`, `dietary_emergency`.
-- The field remains a permission field governed by `default_policy`.
-
-### What `human_escalation_required` loses
-
-- `party_size_auto_max` — This moves to `party_size_policy.auto_book_max`.
-
-### Migration note for agents
-
-- Agents implementing **v0.1** should check `human_escalation_required.party_size_auto_max`.
-- Agents implementing **v0.2** should check `party_size_policy.auto_book_max` instead.
-- Both fields will not coexist in the same rules file.
+This classification is a core design principle established during schema development.
 
 ## How to Validate
 
-You can validate any rules file against the schema using Python:
+You can validate any rules file against the schema using the project's test suite:
+
+```bash
+npm install
+npm test
+```
+
+Or using Python:
 
 ```bash
 pip install jsonschema
@@ -112,5 +87,3 @@ with open("your-rules-file.json") as f:
 validate(instance=rules, schema=schema, cls=Draft202012Validator)
 print("Valid!")
 ```
-
-If the file is invalid, the validator will tell you exactly which field failed and why.

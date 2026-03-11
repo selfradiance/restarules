@@ -129,7 +129,7 @@ The project includes two example venues: **The Golden Fork** (`schema/agent-venu
 
 | Field | Description |
 |---|---|
-| `rate_limits` | Array of rate limit rules. Each rule has `action`, `limit`, `window_unit`, `window_value`, and optional `applies_to` (array of action types from `$defs.action_type`) |
+| `rate_limits` | Array of rate limit rules. Each rule has `action` (what is being rate-limited: `booking_request`, `cancellation_request`, `inquiry`, `complaint`), `limit`, `window_unit`, `window_value`, and optional `applies_to` (scopes the rule to specific agent actions from `$defs.action_type`: `check_availability`, `create_booking`, `modify_booking`, `cancel_booking`) |
 | `human_escalation_required` | Non-party-size escalation triggers (e.g., `reservation_modification`) |
 | `third_party_restrictions` | `no_resale`, `no_transfer`, `identity_bound_booking` (booleans) |
 | `party_size_policy` | `auto_book_max` (required), `human_review_above` (optional), `large_party_channels` (optional) |
