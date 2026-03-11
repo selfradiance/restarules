@@ -83,6 +83,8 @@ The schema lives in `schema/`:
 - `agent-venue-rules.schema.json` — Formal JSON Schema (Draft 2020-12). This is the source of truth for what a valid rules file looks like.
 - `agent-venue-rules-example.json` — A complete example file for a fictional restaurant (The Golden Fork).
 
+The project includes two example venues: **The Golden Fork** (`schema/agent-venue-rules-example.json`) is a comprehensive reference example showing all available fields. **Bella Notte Trattoria** (`.well-known/agent-venue-rules.json`) is the live demo — a realistic minimal file served via GitHub Pages at the `/.well-known/` URL.
+
 ### Required Fields
 
 | Field | Description |
