@@ -65,14 +65,14 @@ When an agent evaluates a venue's rules file, it must follow this procedure:
 1. **Validate the file against the schema.** If validation fails, do not proceed. Treat the rules as unreadable.
 2. **Check `disclosure_required`.** If `disclosure_required.enabled` is `true`, the agent must identify itself as an AI before making any request. No exceptions.
 3. **Check `allowed_channels`.** If the agent's intended channel is not listed in `allowed_channels`, the request is denied.
-4. **Check `rate_limits`.** If a rate limit rule applies to the intended action, the agent must respect the limit. If multiple rate limit rules apply, the most restrictive rule applies. If a rule has an `applies_to` array, it only applies when the agent's action matches one of the listed action types.
-5. **Check `party_size_policy`.** If the party size exceeds `auto_book_max`, the agent must escalate to a human. If `human_review_above` is set, party sizes above that threshold require human review. If `large_party_channels` is set, large parties must use one of the listed channels.
-6. **Check `human_escalation_required`.** If the request matches a listed escalation condition (e.g., `reservation_modification`, `special_event_booking`), the agent must hand off to a human. Note: party-size escalation is handled by `party_size_policy` (step 5), not this field.
-7. **Check `third_party_restrictions`.** If the agent is acting on behalf of a third party and restrictions apply, the request is denied.
-8. **Check `deposit_policy`.** If deposits are required (`required: true`), the agent must inform the user of the deposit amount, currency, and refund terms before proceeding.
-9. **Check `user_acknowledgment_requirements`.** If present, the agent must confirm each listed policy (e.g., `deposit_policy`, `cancellation_policy`, `no_show_policy`) with the user before proceeding.
-10. **Convey informational fields.** If `cancellation_policy` or `no_show_policy` are present, the agent should convey their terms to the user. These fields never block actions — they are informational only.
-11. **For any optional permission field that is omitted from the file, apply `default_policy`.** If `default_policy` is `"deny_if_unspecified"`, treat the missing permission field as a denial. If `"allow_if_unspecified"`, treat it as permitted. Informational fields (`complaint_endpoint`, `cancellation_policy`, `no_show_policy`) are never governed by `default_policy`.
+4. **Check `rate_limits`.** If a rate limit rule applies to the intended action, the agent must respect the limit. If multiple rate limit rules apply, the most restrictive rule applies. If a rule has an `applies_to` array, it only applies to the listed action types.
+5. **Check `human_escalation_required`.** If the request matches a listed escalation condition, the agent must hand off to a human.
+6. **Check `party_size_policy`.** If the party size exceeds `auto_book_max`, the agent cannot auto-book. If `human_review_above` is set and the party size exceeds it, escalate to a human. If `large_party_channels` is set, use only the listed channels for large parties.
+7. **Check `deposit_policy`.** If `deposit_policy.required` is `true`, the agent must inform the user about the deposit before proceeding with the booking.
+8. **Check `user_acknowledgment_requirements`.** If this array is present, the agent must confirm with the user that they acknowledge each listed policy (e.g., `deposit_policy`, `cancellation_policy`, `no_show_policy`) before completing the booking.
+9. **Check `third_party_restrictions`.** If the agent is acting on behalf of a third party and restrictions apply, the request is denied.
+10. **Provide `cancellation_policy` and `no_show_policy` information.** These are informational fields — they never block an action, but the agent should communicate their contents to the user when relevant.
+11. **For any optional schema-defined rule or constraint that is omitted from the file, apply `default_policy`.** If `default_policy` is `"deny_if_unspecified"`, treat the missing rule as a denial. If `"allow_if_unspecified"`, treat it as permitted.
 
 An agent that follows this procedure can deterministically decide whether a proposed action is allowed before taking it.
 
@@ -260,7 +260,16 @@ The rules file is a static JSON file. It can be hosted on any static hosting ser
 
 ## Status
 
-RestaRules is in active development with v0.2 implemented. The schema covers disclosure, channels, rate limits, human escalation, third-party restrictions, party-size policy, deposit policy, cancellation policy, no-show policy, user acknowledgment requirements, venue metadata, and action-scoped rate limiting. All fields are enforced end-to-end by the reference agent and CLI compliance checker, backed by 69 tests. The next schema version on the horizon is v0.3.
+RestaRules is in active development. Current version: **v0.2**.
+
+**What's built:**
+- **v0.2 JSON Schema** (Draft 2020-12) — covers disclosure, channels, rate limits, human escalation, third-party restrictions, party-size policy, deposit policy, cancellation policy, no-show policy, and user acknowledgment requirements
+- **CLI compliance checker** (`cli/check.js`) — validates a rules file and checks agent compliance against all v0.1 and v0.2 fields
+- **Reference agent** (`reference-agent/`) — fetches a live rules file, validates it, and evaluates compliance for simulated booking scenarios
+- **Agent SDK** (`sdk/`) — npm-ready library exporting `validateRules` (JSON Schema validation) and `evaluateCompliance` (full decision engine)
+- **Browser voice demo** — live at [selfradiance.github.io/restarules/demo/voice/](https://selfradiance.github.io/restarules/demo/voice/). An agent fetches live venue rules, evaluates compliance, and speaks results aloud using the Web Speech API.
+- **69 tests** across schema validation, CLI compliance, reference agent, and SDK
+- **CI** via GitHub Actions (runs on every push and PR to main)
 
 ## SDK
 
