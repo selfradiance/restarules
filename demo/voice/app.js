@@ -153,6 +153,64 @@
   }
 
   // ============================================================
+  // Speech synthesis
+  // ============================================================
+
+  var speechReady = false;
+
+  function initSpeech() {
+    if (!("speechSynthesis" in window)) {
+      console.log("Speech synthesis not available in this browser");
+      return;
+    }
+
+    // Voices may load asynchronously
+    var voices = speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      speechReady = true;
+      console.log("Speech ready — " + voices.length + " voices available");
+    }
+
+    speechSynthesis.addEventListener("voiceschanged", function () {
+      voices = speechSynthesis.getVoices();
+      speechReady = true;
+      console.log("Voices loaded — " + voices.length + " voices available");
+    });
+  }
+
+  function speakText(text) {
+    if (!speechReady || speaking) return;
+
+    // Cancel any ongoing speech
+    speechSynthesis.cancel();
+
+    var utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.95;
+
+    speaking = true;
+    setButtonsDisabled(true);
+    speakBtn.disabled = true;
+    speakBtn.textContent = "Speaking...";
+
+    utterance.onend = function () {
+      speaking = false;
+      setButtonsDisabled(false);
+      speakBtn.disabled = false;
+      speakBtn.textContent = "Speak Result";
+    };
+
+    utterance.onerror = function (event) {
+      console.error("Speech error:", event.error);
+      speaking = false;
+      setButtonsDisabled(false);
+      speakBtn.disabled = false;
+      speakBtn.textContent = "Speak Result";
+    };
+
+    speechSynthesis.speak(utterance);
+  }
+
+  // ============================================================
   // Event listeners
   // ============================================================
 
@@ -162,11 +220,17 @@
   document.getElementById("btn-scenario-4").addEventListener("click", function () { runScenario(4, this); });
   document.getElementById("btn-scenario-5").addEventListener("click", function () { runScenario(5, this); });
 
+  speakBtn.addEventListener("click", function () {
+    var text = speakBtn.getAttribute("data-speech");
+    if (text) speakText(text);
+  });
+
   // ============================================================
   // Fetch and validate rules on load
   // ============================================================
 
   function init() {
+    initSpeech();
     rulesUrlEl.textContent = RULES_URL;
 
     fetch(RULES_URL)
