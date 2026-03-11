@@ -8,6 +8,33 @@ RestaRules defines venue-authored conduct constraints for AI agents. It does not
 
 A restaurant publishes a JSON file at `/.well-known/agent-venue-rules.json`. Any AI agent — voice, search, concierge, booking — should fetch this file before interacting with the venue. The file defines what the agent is and isn't allowed to do.
 
+### Protocol Flow
+
+```
+Venue                          Agent
+  │                              │
+  │  1. Publish rules file at    │
+  │     /.well-known/agent-      │
+  │     venue-rules.json         │
+  │                              │
+  │    2. Fetch rules file  ◄────┤
+  │                              │
+  │                     3. Validate
+  │                        against
+  │                        schema
+  │                              │
+  │                     4. Evaluate
+  │                        compliance
+  │                        (decision
+  │                        procedure)
+  │                              │
+  │                     5. Act (or
+  │                        refuse)
+  │                              │
+```
+
+The venue publishes once; every agent fetches, validates, evaluates, and then either proceeds or refuses — all before taking any action.
+
 ### The `default_policy` Field
 
 Every rules file includes a `default_policy` field set to either `"deny_if_unspecified"` or `"allow_if_unspecified"`. This tells agents how to handle **optional fields that are absent from the file**.
@@ -275,10 +302,18 @@ RestaRules is in active development. Current version: **v0.2**.
 
 ## SDK
 
-The `sdk/` directory contains `restarules-sdk`, an npm package that lets developers validate RestaRules files and evaluate agent compliance programmatically. It exports two functions: `validateRules` for JSON Schema validation and `evaluateCompliance` for running the full decision procedure against a proposed action. See [sdk/README.md](sdk/README.md) for full API documentation and usage examples. Install via npm:
+The `sdk/` directory contains `restarules-sdk`, an npm package that lets developers validate RestaRules files and evaluate agent compliance programmatically. It exports two functions: `validateRules` for JSON Schema validation and `evaluateCompliance` for running the full decision procedure against a proposed action. See [sdk/README.md](sdk/README.md) for full API documentation and usage examples. The SDK is not yet published to npm. To use it locally:
 
+```bash
+git clone https://github.com/selfradiance/restarules.git
+cd restarules/sdk
+npm install
 ```
-npm install restarules-sdk
+
+Then require it in your project:
+
+```javascript
+const { validateRules, evaluateCompliance } = require('./sdk');
 ```
 
 ## Browser Voice Demo
