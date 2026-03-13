@@ -394,6 +394,53 @@ Permission fields govern whether an agent action is allowed, denied, or requires
 
 ### 8.3 Informational Fields
 
+Informational fields provide data that agents SHOULD surface to users but MUST NOT use to block or deny agent actions. Informational fields are not subject to `default_policy` when absent — their absence simply means the information is not available.
+
+#### `complaint_endpoint`
+
+**Type:** String (URL)
+**Required:** No
+**Classification:** Informational
+
+**Meaning:** A URL where agents or users can report agent misbehavior to the venue.
+
+**Agent behavior:** Agents SHOULD make this URL available to users if an interaction results in a dispute or complaint. Agents MUST NOT use the absence of this field to deny any action. Agents that make HTTP requests to this URL MUST follow the SSRF guidance in Section 6 (Security and Privacy Considerations).
+
+**Absence behavior:** If absent, no complaint endpoint is available. This MUST NOT affect compliance decisions.
+
+#### `cancellation_policy`
+
+**Type:** Object containing `penalty_applies` (boolean, required), `window_minutes` (integer, optional), `penalty_amount` (number, optional), and `currency` (string, optional)
+**Required:** No
+**Classification:** Informational
+
+**Meaning:** Describes the venue's cancellation policy so the agent can inform the user.
+
+- `penalty_applies`: Whether a penalty is charged for cancellations.
+- `window_minutes`: The cancellation window in minutes before the reservation time. Cancellations within this window may incur a penalty.
+- `penalty_amount`: The penalty amount.
+- `currency`: The currency of the penalty (ISO 4217). If absent, agents SHOULD refer to `venue_currency`.
+
+**Agent behavior:** Agents SHOULD present this information to the user before completing a booking or when processing a cancellation request. Agents MUST NOT use this field to block any action.
+
+**Absence behavior:** If absent, no cancellation policy information is available. This MUST NOT affect compliance decisions.
+
+#### `no_show_policy`
+
+**Type:** Object containing `fee` (number, required), `currency` (string, optional), and `grace_period_minutes` (integer, optional)
+**Required:** No
+**Classification:** Informational
+
+**Meaning:** Describes the venue's no-show fee policy so the agent can inform the user.
+
+- `fee`: The fee charged for no-shows.
+- `currency`: The currency of the fee (ISO 4217). If absent, agents SHOULD refer to `venue_currency`.
+- `grace_period_minutes`: The number of minutes after the reservation time before the booking is considered a no-show.
+
+**Agent behavior:** Agents SHOULD present this information to the user when completing a booking. Agents MUST NOT use this field to block any action.
+
+**Absence behavior:** If absent, no no-show policy information is available. This MUST NOT affect compliance decisions.
+
 ## 9. Decision Procedure
 
 ## 10. Error Handling
