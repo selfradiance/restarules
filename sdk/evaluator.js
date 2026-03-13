@@ -10,13 +10,13 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
   const dp = rules.default_policy;
   const result = {};
 
-  // 1. Disclosure
+  // 2. Disclosure
   result.disclosure = {
     required: rules.disclosure_required.enabled,
     phrasing: rules.disclosure_required.phrasing || null,
   };
 
-  // 2. Channel check
+  // 3. Channel check
   if (channel !== null) {
     if (rules.allowed_channels.includes(channel)) {
       result.channel = { result: "ALLOWED" };
@@ -26,32 +26,6 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
   } else {
     result.channel = { result: "NOT_CHECKED", allowedChannels: rules.allowed_channels };
   }
-
-  // 3. Party size
-  if (partySize !== null) {
-    if (rules.party_size_policy) {
-      const autoMax = rules.party_size_policy.auto_book_max;
-      result.partySize = {
-        result: partySize > autoMax ? "ESCALATE_TO_HUMAN" : "ALLOWED",
-        autoMax,
-      };
-    } else {
-      result.partySize = {
-        result: dp === "allow_if_unspecified" ? "ALLOWED" : "DENIED_DEFAULT_POLICY",
-        autoMax: null,
-      };
-    }
-  } else {
-    result.partySize = {
-      result: "NOT_CHECKED",
-      autoMax: rules.party_size_policy ? rules.party_size_policy.auto_book_max : null,
-    };
-  }
-
-  // 3b. Escalation conditions (non-party-size triggers)
-  result.escalationConditions = rules.human_escalation_required
-    ? rules.human_escalation_required.conditions
-    : [];
 
   // 4. Rate limits (with applies_to metadata support)
   if (action !== null && attempts !== null) {
@@ -79,32 +53,33 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
     result.rateLimit = { result: "NOT_CHECKED" };
   }
 
-  // 5. Third-party restrictions
-  if (rules.third_party_restrictions) {
-    const tpr = rules.third_party_restrictions;
-    result.thirdParty = {
-      defined: true,
-      noResale: tpr.no_resale,
-      noTransfer: tpr.no_transfer,
-      identityBound: tpr.identity_bound_booking,
-    };
+  // 5. Escalation conditions (non-party-size triggers)
+  result.escalationConditions = rules.human_escalation_required
+    ? rules.human_escalation_required.conditions
+    : [];
+
+  // 6. Party size
+  if (partySize !== null) {
+    if (rules.party_size_policy) {
+      const autoMax = rules.party_size_policy.auto_book_max;
+      result.partySize = {
+        result: partySize > autoMax ? "ESCALATE_TO_HUMAN" : "ALLOWED",
+        autoMax,
+      };
+    } else {
+      result.partySize = {
+        result: dp === "allow_if_unspecified" ? "ALLOWED" : "DENIED_DEFAULT_POLICY",
+        autoMax: null,
+      };
+    }
   } else {
-    result.thirdParty = {
-      defined: false,
-      defaultPolicyResult: dp === "allow_if_unspecified" ? "ALLOWED" : "DENIED_DEFAULT_POLICY",
+    result.partySize = {
+      result: "NOT_CHECKED",
+      autoMax: rules.party_size_policy ? rules.party_size_policy.auto_book_max : null,
     };
   }
 
-  // 6. Complaint endpoint
-  result.complaintEndpoint = rules.complaint_endpoint || null;
-
-  // 7. Venue metadata (informational — never blocks actions)
-  result.venueMetadata = {
-    currency: rules.venue_currency || null,
-    timezone: rules.venue_timezone || null,
-  };
-
-  // 8. Deposit policy (permission field — governed by default_policy)
+  // 7. Deposit policy (permission field — governed by default_policy)
   if (rules.deposit_policy) {
     result.depositPolicy = {
       defined: true,
@@ -120,7 +95,7 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
     };
   }
 
-  // 9. User acknowledgment requirements (permission field — governed by default_policy)
+  // 8. User acknowledgment requirements (permission field — governed by default_policy)
   if (rules.user_acknowledgment_requirements) {
     result.userAcknowledgmentRequirements = {
       defined: true,
@@ -133,7 +108,34 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
     };
   }
 
-  // 10. Cancellation policy (informational — never blocks actions)
+  // 9. Third-party restrictions
+  if (rules.third_party_restrictions) {
+    const tpr = rules.third_party_restrictions;
+    result.thirdParty = {
+      defined: true,
+      noResale: tpr.no_resale,
+      noTransfer: tpr.no_transfer,
+      identityBound: tpr.identity_bound_booking,
+    };
+  } else {
+    result.thirdParty = {
+      defined: false,
+      defaultPolicyResult: dp === "allow_if_unspecified" ? "ALLOWED" : "DENIED_DEFAULT_POLICY",
+    };
+  }
+
+  // 10. Informational fields (never block actions)
+
+  // 10a. Complaint endpoint
+  result.complaintEndpoint = rules.complaint_endpoint || null;
+
+  // 10b. Venue metadata
+  result.venueMetadata = {
+    currency: rules.venue_currency || null,
+    timezone: rules.venue_timezone || null,
+  };
+
+  // 10c. Cancellation policy (informational — never blocks actions)
   if (rules.cancellation_policy) {
     result.cancellationPolicy = {
       defined: true,
@@ -146,7 +148,7 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
     result.cancellationPolicy = { defined: false };
   }
 
-  // 11. No-show policy (informational — never blocks actions)
+  // 10d. No-show policy (informational — never blocks actions)
   if (rules.no_show_policy) {
     result.noShowPolicy = {
       defined: true,
