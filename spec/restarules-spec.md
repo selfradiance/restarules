@@ -67,6 +67,36 @@ The key words "MUST", "MUST NOT", "SHOULD", "SHOULD NOT", and "MAY" in this docu
 
 ## 5. Discovery and Transport
 
+A venue publishes its rules file at the following well-known URI path, relative to the venue's primary domain:
+
+`/.well-known/agent-venue-rules.json`
+
+For example, a venue at `https://example-restaurant.com` would host its rules file at:
+
+`https://example-restaurant.com/.well-known/agent-venue-rules.json`
+
+### Transport Requirements
+
+Venues MUST serve the rules file over HTTPS. Agents MUST NOT fetch rules files over plain HTTP.
+
+The rules file MUST be served with a Content-Type of `application/json`.
+
+Agents MUST retrieve the rules file using an HTTP GET request. No other HTTP methods are required or expected.
+
+### CORS
+
+Venues SHOULD serve the rules file with the header `Access-Control-Allow-Origin: *` to allow browser-based agents to fetch the file directly. Without this header, browser-based agents (such as web applications or browser extensions) will be blocked by cross-origin restrictions.
+
+### Redirects
+
+Agents MAY follow HTTP redirects (301, 302) when fetching the rules file. If a redirect leads to a non-HTTPS URL, the agent MUST NOT follow it.
+
+### Hosting
+
+The rules file is a static JSON document. It can be hosted on any web server, static hosting provider, or content delivery network capable of serving files at the `/.well-known/` path. No dynamic server logic is required.
+
+Venues that use hosting platforms which do not support the `/.well-known/` path convention (such as some managed website builders) MAY host the file at an alternative URL, but agents are only required to check the well-known path. Alternative hosting locations are outside the scope of this specification.
+
 ## 6. Security and Privacy Considerations
 
 ## 7. Document Format
