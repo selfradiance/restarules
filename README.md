@@ -4,6 +4,10 @@ A JSON schema and hosting standard that lets restaurants publish machine-readabl
 
 RestaRules defines venue-authored conduct constraints for AI agents. It does not define booking lifecycle semantics, availability, or payment processing — those concerns belong to protocols like AgenticBooking and UCP.
 
+### Specification
+
+The formal RestaRules specification describes the document format, field semantics, discovery mechanism, decision procedure, error handling, and conformance requirements in full detail: [spec/restarules-spec.md](spec/restarules-spec.md)
+
 ## How It Works
 
 A restaurant publishes a JSON file at `/.well-known/agent-venue-rules.json`. Any AI agent — voice, search, concierge, booking — should fetch this file before interacting with the venue. The file defines what the agent is and isn't allowed to do.
