@@ -190,7 +190,7 @@ Venues MUST NOT rely on unknown fields being processed by agents. Any field that
 
 **Meaning:** Identifies which version of the RestaRules specification this rules file conforms to.
 
-**Agent behavior:** Agents SHOULD check this field before processing any other fields. If the value is not recognized, the agent SHOULD decline to process the file. See Section 7 (Versioning) and Section 10 (Error Handling).
+**Agent behavior:** Agents SHOULD check this field before processing any other fields. If the value is not recognized, the agent MUST NOT process the file. See Section 7 (Versioning) and Section 10 (Error Handling).
 
 **Absence behavior:** This field is required. A rules file missing `schema_version` MUST fail schema validation.
 
@@ -320,7 +320,7 @@ Channel definitions: `"phone"` refers to voice calls to the venue. `"web"` refer
 - `window_unit` (string): The unit of the time window (e.g., `"hour"`, `"day"`)
 - `applies_to` (array, optional): Specific action types this rule applies to, referencing the shared `action_type` enum (`"check_availability"`, `"create_booking"`, `"modify_booking"`, `"cancel_booking"`)
 
-The `action` field describes the conceptual category of the rate limit rule (e.g., `"booking_request"`). The `applies_to` field, when present, restricts the rule to specific action types from the shared `action_type` vocabulary. If `applies_to` is absent, the rule applies broadly to all actions matching the `action` category. The `action` field is always required; `applies_to` is an optional refinement.
+The `action` field is a venue-defined label that identifies the conceptual category of the rate limit rule (e.g., `"booking_request"`). The `applies_to` field, when present, is the authoritative field for action-type matching — it restricts the rule to specific action types from the shared `action_type` vocabulary. If `applies_to` is absent, the agent MAY treat the rule as applying to all supported action types. The `action` field is always required; `applies_to` is an optional refinement.
 
 **Agent behavior:** Agents MUST track their own action counts and respect the limits defined. If an `applies_to` array is present, the rule applies only to the listed action types. If `applies_to` is absent, the rule applies to all actions matching the `action` field. This specification does not define how venues identify individual agents for rate limit counting purposes. Agents SHOULD enforce rate limits using the identifier they present to the venue. If no identifier is presented, agents SHOULD enforce limits per session or per user request context. Formal identity semantics are deferred to a future version of this specification.
 
@@ -351,7 +351,7 @@ The `action` field describes the conceptual category of the rate limit rule (e.g
 - `no_transfer`: If `true`, the reservation MUST NOT be transferred to a different party.
 - `identity_bound_booking`: If `true`, the reservation is bound to the identity of the person who made it and MUST be presented by that person.
 
-**Agent behavior:** `no_resale` and `no_transfer` apply to `create_booking` and `modify_booking` actions. If either restriction is `true`, the agent MUST NOT create or modify bookings on behalf of resale platforms or transfer services. `identity_bound_booking` applies to all action types — if `true`, the agent MUST ensure the booking is associated with and will be presented by the identity of the actual diner. Agents acting on behalf of third-party services MUST check these restrictions before proceeding.
+**Agent behavior:** `no_resale` and `no_transfer` apply to `create_booking` and `modify_booking` actions. If either restriction is `true`, the agent MUST NOT create or modify bookings on behalf of resale platforms or transfer services. `identity_bound_booking` applies to all action types — if `true`, the agent MUST obtain an explicit representation from the user that the booking is for the actual diner and not for transfer or resale. Agents acting on behalf of third-party services MUST check these restrictions before proceeding.
 
 **Absence behavior:** Subject to `default_policy`.
 
@@ -386,7 +386,7 @@ The `action` field describes the conceptual category of the rate limit rule (e.g
 - `currency`: The currency of the deposit (ISO 4217). If absent, agents SHOULD refer to `venue_currency`.
 - `refundable`: Whether the deposit is refundable.
 
-**Agent behavior:** If `required` is `true`, the agent MUST inform the user about the deposit requirement before completing a booking. The agent MUST NOT complete a booking that requires a deposit without the user's acknowledgment.
+**Agent behavior:** If `required` is `true`, the agent MUST inform the user about the deposit requirement before completing a booking. The agent MUST NOT complete a booking that requires a deposit without the user's acknowledgment. Agents SHOULD interpret monetary values as fixed-precision decimal amounts in the currency specified by the `currency` sub-field or, if absent, by `venue_currency`.
 
 **Absence behavior:** Subject to `default_policy`.
 
@@ -398,7 +398,7 @@ The `action` field describes the conceptual category of the rate limit rule (e.g
 
 **Meaning:** A list of policy names that the agent must confirm with the user before proceeding. Each string MUST exactly match the JSON key of the corresponding field in the rules file (e.g., `"cancellation_policy"`, `"deposit_policy"`, `"no_show_policy"`).
 
-**Agent behavior:** Before completing an action, the agent MUST present each listed policy to the user and obtain acknowledgment. The agent MUST NOT proceed until the user has acknowledged all listed policies. If a referenced policy name does not correspond to a field present in the rules file, the agent SHOULD handle this gracefully (e.g., inform the user that the venue requires acknowledgment of a policy that is not described in the rules file).
+**Agent behavior:** Before completing an action, the agent MUST present each listed policy to the user and obtain acknowledgment. The agent MUST NOT proceed until the user has acknowledged all listed policies. If a referenced policy name does not correspond to a field present in the rules file, the agent MUST inform the user that acknowledgment is required for a policy whose details were not provided in the rules file. The agent MAY continue only if the user explicitly acknowledges that the policy details are unavailable.
 
 **Absence behavior:** Subject to `default_policy`.
 
@@ -475,11 +475,11 @@ Note: If `large_party_channels` specifies channels that differ from `allowed_cha
 
 **Step 9: Check `third_party_restrictions`.** If `third_party_restrictions` is present and any applicable restriction is `true`, the agent MUST deny the restricted action. If absent, apply `default_policy`.
 
-**Step 10: Surface informational fields.** The agent SHOULD present any available informational fields (`complaint_endpoint`, `cancellation_policy`, `no_show_policy`) to the user at the appropriate point in the interaction. These fields MUST NOT block or deny any action.
+**Step 10: Surface informational fields.** The agent SHOULD present any available informational fields (`complaint_endpoint`, `cancellation_policy`, `no_show_policy`) to the user before completing the associated booking or modification action, or during cancellation handling where applicable. These fields MUST NOT block or deny any action.
 
 ## 10. Error Handling
 
-This section defines how agents MUST behave when they encounter errors fetching or processing a rules file. The default posture is fail-closed: if an agent cannot retrieve, parse, or validate a rules file, it MUST NOT proceed with automated interaction as if no rules exist.
+This section defines how agents MUST behave when they encounter errors fetching or processing a rules file. With the exception of HTTP 404 (which indicates the venue has not published a rules file — see below), the default posture is fail-closed: if a rules file appears to exist but the agent cannot successfully retrieve, parse, or validate it, the agent MUST NOT proceed with automated interaction as if no rules exist.
 
 ### Rules file not found (HTTP 404)
 
@@ -499,7 +499,7 @@ If the JSON document fails validation against the RestaRules schema (e.g., missi
 
 ### Unsupported `schema_version`
 
-If the `schema_version` field contains a value the agent does not recognize, the agent SHOULD decline to process the file. An unrecognized version means the document structure may have changed in ways the agent cannot safely interpret. See Section 7 (Versioning).
+If the `schema_version` field contains a value the agent does not recognize, the agent MUST NOT process the file. An unrecognized version means the document structure may have changed in ways the agent cannot safely interpret. See Section 7 (Versioning).
 
 ### Network timeout
 
@@ -545,7 +545,7 @@ An agent implementation conforms to this specification if it meets all of the fo
 2. The agent validates the fetched document against the RestaRules JSON Schema.
 3. The agent processes all fields according to the semantics defined in Section 8.
 4. The agent follows the 10-step Decision Procedure defined in Section 9 in the specified order, including short-circuit evaluation on denial.
-5. The agent handles errors according to Section 10, defaulting to a fail-closed posture.
+5. The agent handles errors according to Section 10.
 6. The agent respects caching guidance as described in Section 11.
 7. The agent ignores fields it does not recognize, per the extensibility rule in Section 7.
 
