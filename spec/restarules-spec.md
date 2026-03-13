@@ -553,4 +553,91 @@ This suffix is not currently registered with IANA. If this specification gains a
 
 ### 14.1 Minimal Example
 
+The following example shows a rules file containing only the required fields. This represents the simplest valid RestaRules file a venue can publish.
+
+```json
+{
+  "schema_version": "0.2",
+  "venue_name": "Corner Bistro",
+  "venue_url": "https://cornerbistro.example.com",
+  "last_updated": "2026-03-01",
+  "effective_at": "2026-03-01",
+  "default_policy": "allow_if_unspecified",
+  "disclosure_required": {
+    "enabled": true,
+    "phrasing": "Please let the host know you are an automated assistant."
+  },
+  "allowed_channels": ["phone", "web"]
+}
+```
+
+This venue requires AI disclosure, permits phone and web interactions, and uses a permissive default policy — any optional permission field not specified is treated as allowed. No rate limits, deposit requirements, or escalation conditions are defined.
+
 ### 14.2 Full Example
+
+The following example shows a rules file using all available fields, representing a strict venue with comprehensive policies.
+
+```json
+{
+  "schema_version": "0.2",
+  "venue_name": "The Golden Fork",
+  "venue_url": "https://goldenfork.example.com",
+  "last_updated": "2026-03-10",
+  "effective_at": "2026-03-10",
+  "default_policy": "deny_if_unspecified",
+  "venue_currency": "USD",
+  "venue_timezone": "America/New_York",
+  "disclosure_required": {
+    "enabled": true,
+    "phrasing": "You must identify yourself as an AI agent before speaking with staff."
+  },
+  "allowed_channels": ["phone", "web", "app"],
+  "rate_limits": [
+    {
+      "action": "booking_request",
+      "limit": 3,
+      "window_value": 1,
+      "window_unit": "hour",
+      "applies_to": ["create_booking", "modify_booking"]
+    }
+  ],
+  "human_escalation_required": {
+    "conditions": ["reservation_modification"]
+  },
+  "third_party_restrictions": {
+    "no_resale": true,
+    "no_transfer": true,
+    "identity_bound_booking": true
+  },
+  "party_size_policy": {
+    "auto_book_max": 6,
+    "human_review_above": 10,
+    "large_party_channels": ["phone"]
+  },
+  "deposit_policy": {
+    "required": true,
+    "amount": 50,
+    "currency": "USD",
+    "refundable": false
+  },
+  "user_acknowledgment_requirements": [
+    "cancellation_policy",
+    "deposit_policy",
+    "no_show_policy"
+  ],
+  "complaint_endpoint": "https://goldenfork.example.com/agent-complaints",
+  "cancellation_policy": {
+    "penalty_applies": true,
+    "window_minutes": 120,
+    "penalty_amount": 25,
+    "currency": "USD"
+  },
+  "no_show_policy": {
+    "fee": 100,
+    "currency": "USD",
+    "grace_period_minutes": 15
+  }
+}
+```
+
+This venue uses a strict default policy — any optional permission field not specified is treated as denied. The venue requires AI disclosure, permits phone, web, and app interactions, limits booking requests to 3 per hour, requires human involvement for reservation modifications and parties over 6, prohibits resale and transfer, requires a non-refundable $50 deposit, and mandates that the agent confirm cancellation, deposit, and no-show policies with the user before proceeding. A $25 cancellation penalty applies within 2 hours of the reservation, and a $100 no-show fee applies after a 15-minute grace period.
