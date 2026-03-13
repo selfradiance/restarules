@@ -22,7 +22,7 @@ AI agents are increasingly interacting with restaurants — making reservations,
 
 RestaRules addresses this gap. It defines a simple JSON document that a venue publishes at a predictable URL. Any agent — whether a voice assistant, a booking bot, a concierge service, or a search engine — can fetch this document before interacting with the venue and adjust its behavior accordingly.
 
-The protocol is designed to be lightweight, static, and cacheable. A RestaRules file requires no authentication to fetch, no API integration to serve, and no ongoing maintenance beyond updating the file when venue policies change. It follows the same pattern as `robots.txt` — a voluntary, machine-readable policy file hosted at a well-known path — applied to the domain of agentic commerce rather than web crawling.
+The protocol is designed to be lightweight, static, and cacheable. A RestaRules file requires no authentication to fetch, no API integration to serve, and no ongoing maintenance beyond updating the file when venue policies change. It follows a pattern similar to the `robots.txt` convention defined for web crawlers — a voluntary, machine-readable policy file hosted at a well-known path — applied to the domain of agentic commerce rather than content crawling.
 
 ## 3. Scope
 
@@ -60,6 +60,8 @@ The key words "MUST", "MUST NOT", "SHOULD", "SHOULD NOT", and "MAY" in this docu
 **Rules Document:** Synonym for Rules File. Both terms are used interchangeably in this specification.
 
 **Schema:** The JSON Schema definition that describes the valid structure of a rules file. The schema is published alongside this specification in the project repository.
+
+**Escalation:** Transferring an interaction to a human operator or directing the user to a human-managed communication channel. When this specification requires an agent to escalate, the agent MUST cease automated processing of the action and ensure a human is involved before the interaction proceeds.
 
 **Permission Field:** A field in the rules file that governs whether an agent action is allowed, denied, or requires escalation. Permission fields are subject to the `default_policy` when absent. Examples: `allowed_channels`, `rate_limits`, `party_size_policy`, `deposit_policy`.
 
@@ -136,8 +138,8 @@ Every rules file MUST include the following fields:
 | `schema_version` | String | Version of the RestaRules specification. Valid values: `"0.1"`, `"0.2"`. |
 | `venue_name` | String | Name of the venue. |
 | `venue_url` | String | URL of the venue's website. MUST begin with `https://`. |
-| `last_updated` | String | ISO 8601 date when the file was last edited. |
-| `effective_at` | String | ISO 8601 date when the rules take effect. |
+| `last_updated` | String | ISO 8601 calendar date (YYYY-MM-DD) when the file was last edited. |
+| `effective_at` | String | ISO 8601 calendar date (YYYY-MM-DD) when the rules take effect. |
 | `default_policy` | String | How agents should treat optional permission fields that are absent. Valid values: `"deny_if_unspecified"`, `"allow_if_unspecified"`. |
 | `disclosure_required` | Object | Whether the agent must identify itself as automated. Contains `enabled` (boolean) and `phrasing` (string). |
 | `allowed_channels` | Array | List of communication channels the venue permits. Valid values: `"phone"`, `"web"`, `"sms"`, `"email"`, `"app"`. |
@@ -164,7 +166,9 @@ The following fields are optional. Their behavior when absent is governed by the
 
 The `schema_version` field indicates which version of this specification the rules file conforms to. Agents SHOULD check this field before processing the file.
 
-An agent that encounters a `schema_version` value it does not recognize SHOULD decline to process the file automatically. An unrecognized version means the document structure may have changed in ways the agent cannot safely assume.
+An agent that encounters a `schema_version` value it does not recognize MUST NOT process the file. An unrecognized version means the document structure may have changed in ways the agent cannot safely assume.
+
+Agents MUST support `schema_version` `"0.2"`. Support for earlier versions (such as `"0.1"`) is OPTIONAL.
 
 This is distinct from unknown fields (see Extensibility below). An unrecognized version applies to the entire document. An unknown field is a single addition within a recognized version.
 
@@ -214,7 +218,7 @@ Venues MUST NOT rely on unknown fields being processed by agents. Any field that
 
 #### `last_updated`
 
-**Type:** String (ISO 8601 date)
+**Type:** String (ISO 8601 calendar date, YYYY-MM-DD)
 **Required:** Yes
 
 **Meaning:** The date when the rules file was last modified by the venue.
@@ -225,7 +229,7 @@ Venues MUST NOT rely on unknown fields being processed by agents. Any field that
 
 #### `effective_at`
 
-**Type:** String (ISO 8601 date)
+**Type:** String (ISO 8601 calendar date, YYYY-MM-DD)
 **Required:** Yes
 
 **Meaning:** The date when the rules in this file take effect. This allows a venue to publish updated rules in advance of their enforcement date.
@@ -261,7 +265,9 @@ Venues MUST NOT rely on unknown fields being processed by agents. Any field that
 Permission fields govern whether an agent action is allowed, denied, or requires escalation. When an optional permission field is absent from the rules file, the `default_policy` field determines the agent's behavior:
 
 - If `default_policy` is `"deny_if_unspecified"`, the agent MUST treat the absent field as a denial.
-- If `default_policy` is `"allow_if_unspecified"`, the agent MAY proceed as if the field permits the action.
+- If `default_policy` is `"allow_if_unspecified"`, the agent MUST treat the absent field as permitting the action.
+
+When `default_policy` results in a denial for an absent permission field, the agent MUST NOT perform the action governed by that field without first escalating to a human. The denial means the venue has not granted permission for that category of behavior — it does not imply a specific restrictive value (e.g., a denial for absent `rate_limits` does not mean zero attempts are allowed; it means the agent must not proceed without human guidance on rate limiting).
 
 #### `default_policy`
 
@@ -282,7 +288,7 @@ Permission fields govern whether an agent action is allowed, denied, or requires
 
 **Meaning:** Specifies whether the agent must disclose its automated nature when interacting with venue staff.
 
-**Agent behavior:** If `enabled` is `true`, the agent MUST identify itself as automated before or during any interaction with the venue. The `phrasing` field provides the venue's preferred disclosure language. Agents SHOULD use the provided phrasing where possible, but MAY use equivalent language if the exact phrasing is impractical for the interaction channel.
+**Agent behavior:** If `enabled` is `true`, the agent MUST disclose its automated nature at the beginning of the interaction, before initiating substantive communication with the venue. The `phrasing` field provides the venue's preferred disclosure language. Agents SHOULD use the provided phrasing where possible, but MAY use equivalent language if the exact phrasing is impractical for the interaction channel.
 
 **Absence behavior:** This field is required. A rules file missing `disclosure_required` MUST fail schema validation.
 
@@ -291,6 +297,8 @@ Permission fields govern whether an agent action is allowed, denied, or requires
 **Type:** Array of strings
 **Required:** Yes
 **Valid values:** `"phone"`, `"web"`, `"sms"`, `"email"`, `"app"`
+
+Channel definitions: `"phone"` refers to voice calls to the venue. `"web"` refers to interactions through the venue's website or web-based booking interface. `"sms"` refers to text messages sent to the venue. `"email"` refers to email sent to the venue. `"app"` refers to interactions through the venue's own mobile application or a third-party booking application.
 
 **Meaning:** The communication channels through which the venue permits agent interactions.
 
@@ -312,7 +320,9 @@ Permission fields govern whether an agent action is allowed, denied, or requires
 - `window_unit` (string): The unit of the time window (e.g., `"hour"`, `"day"`)
 - `applies_to` (array, optional): Specific action types this rule applies to, referencing the shared `action_type` enum (`"check_availability"`, `"create_booking"`, `"modify_booking"`, `"cancel_booking"`)
 
-**Agent behavior:** Agents MUST track their own action counts and respect the limits defined. If an `applies_to` array is present, the rule applies only to the listed action types. If `applies_to` is absent, the rule applies to all actions matching the `action` field.
+The `action` field describes the conceptual category of the rate limit rule (e.g., `"booking_request"`). The `applies_to` field, when present, restricts the rule to specific action types from the shared `action_type` vocabulary. If `applies_to` is absent, the rule applies broadly to all actions matching the `action` category. The `action` field is always required; `applies_to` is an optional refinement.
+
+**Agent behavior:** Agents MUST track their own action counts and respect the limits defined. If an `applies_to` array is present, the rule applies only to the listed action types. If `applies_to` is absent, the rule applies to all actions matching the `action` field. This specification does not define how venues identify individual agents for rate limit counting purposes. Agents SHOULD enforce rate limits using the identifier they present to the venue. If no identifier is presented, agents SHOULD enforce limits per session or per user request context. Formal identity semantics are deferred to a future version of this specification.
 
 **Absence behavior:** Subject to `default_policy`.
 
@@ -341,7 +351,7 @@ Permission fields govern whether an agent action is allowed, denied, or requires
 - `no_transfer`: If `true`, the reservation MUST NOT be transferred to a different party.
 - `identity_bound_booking`: If `true`, the reservation is bound to the identity of the person who made it and MUST be presented by that person.
 
-**Agent behavior:** Agents acting on behalf of third-party services (resale platforms, concierge services that transfer bookings) MUST check these restrictions before proceeding. If any applicable restriction is `true`, the agent MUST NOT proceed with the restricted action.
+**Agent behavior:** `no_resale` and `no_transfer` apply to `create_booking` and `modify_booking` actions. If either restriction is `true`, the agent MUST NOT create or modify bookings on behalf of resale platforms or transfer services. `identity_bound_booking` applies to all action types — if `true`, the agent MUST ensure the booking is associated with and will be presented by the identity of the actual diner. Agents acting on behalf of third-party services MUST check these restrictions before proceeding.
 
 **Absence behavior:** Subject to `default_policy`.
 
@@ -357,7 +367,7 @@ Permission fields govern whether an agent action is allowed, denied, or requires
 - `human_review_above`: If present, party sizes above this number require human review.
 - `large_party_channels`: If present, specifies which channels should be used for large party inquiries.
 
-**Agent behavior:** If the requested party size exceeds `auto_book_max`, the agent MUST NOT book automatically and MUST escalate to a human. If `large_party_channels` is provided, the agent SHOULD direct the large party inquiry through one of the listed channels.
+**Agent behavior:** If the requested party size exceeds `auto_book_max`, the agent MUST NOT book automatically and MUST escalate to a human. This applies to all party sizes above `auto_book_max`, regardless of whether `human_review_above` is also defined. The `human_review_above` field, when present, indicates a higher threshold above which the venue considers the party especially large and may apply additional review. If `large_party_channels` is provided, the agent SHOULD direct the large party inquiry through one of the listed channels.
 
 **Absence behavior:** Subject to `default_policy`.
 
@@ -386,7 +396,7 @@ Permission fields govern whether an agent action is allowed, denied, or requires
 **Required:** No
 **Classification:** Permission
 
-**Meaning:** A list of policy names that the agent must confirm with the user before proceeding. Each string references a policy area (e.g., `"cancellation_policy"`, `"deposit_policy"`, `"no_show_policy"`).
+**Meaning:** A list of policy names that the agent must confirm with the user before proceeding. Each string MUST exactly match the JSON key of the corresponding field in the rules file (e.g., `"cancellation_policy"`, `"deposit_policy"`, `"no_show_policy"`).
 
 **Agent behavior:** Before completing an action, the agent MUST present each listed policy to the user and obtain acknowledgment. The agent MUST NOT proceed until the user has acknowledged all listed policies. If a referenced policy name does not correspond to a field present in the rules file, the agent SHOULD handle this gracefully (e.g., inform the user that the venue requires acknowledgment of a policy that is not described in the rules file).
 
@@ -394,7 +404,7 @@ Permission fields govern whether an agent action is allowed, denied, or requires
 
 ### 8.3 Informational Fields
 
-Informational fields provide data that agents SHOULD surface to users but MUST NOT use to block or deny agent actions. Informational fields are not subject to `default_policy` when absent — their absence simply means the information is not available.
+Informational fields provide data that agents SHOULD present to users before completing the associated booking or modification action. Agents MUST NOT use informational fields to block or deny agent actions. Informational fields are not subject to `default_policy` when absent — their absence simply means the information is not available.
 
 #### `complaint_endpoint`
 
@@ -457,6 +467,8 @@ This section defines the algorithm an agent MUST follow when processing a RestaR
 
 **Step 6: Check `party_size_policy`.** If `party_size_policy` is present and the requested party size exceeds `auto_book_max`, the agent MUST escalate to a human and deny the automated booking. If `large_party_channels` is provided, the agent SHOULD direct the inquiry through one of the listed channels. If absent, apply `default_policy`.
 
+Note: If `large_party_channels` specifies channels that differ from `allowed_channels`, the `allowed_channels` check in Step 3 takes precedence. An agent MUST NOT use a channel that is not listed in `allowed_channels`, even if `large_party_channels` suggests it.
+
 **Step 7: Check `deposit_policy`.** If `deposit_policy` is present and `required` is `true`, the agent MUST inform the user of the deposit requirement and obtain acknowledgment before proceeding. If absent, apply `default_policy`.
 
 **Step 8: Check `user_acknowledgment_requirements`.** If `user_acknowledgment_requirements` is present, the agent MUST present each listed policy to the user and obtain acknowledgment before proceeding. The agent MUST NOT proceed until all listed policies have been acknowledged. If absent, apply `default_policy`.
@@ -465,15 +477,13 @@ This section defines the algorithm an agent MUST follow when processing a RestaR
 
 **Step 10: Surface informational fields.** The agent SHOULD present any available informational fields (`complaint_endpoint`, `cancellation_policy`, `no_show_policy`) to the user at the appropriate point in the interaction. These fields MUST NOT block or deny any action.
 
-**Step 11: Apply `default_policy` for any remaining undefined permission fields.** If any optional permission field was not present in the rules file and was not already evaluated in a previous step, the agent MUST apply the `default_policy` to determine whether to allow or deny the action.
-
 ## 10. Error Handling
 
 This section defines how agents MUST behave when they encounter errors fetching or processing a rules file. The default posture is fail-closed: if an agent cannot retrieve, parse, or validate a rules file, it MUST NOT proceed with automated interaction as if no rules exist.
 
 ### Rules file not found (HTTP 404)
 
-If the venue's server returns a 404 response for the well-known path, the agent SHOULD interpret this as the venue not having published a rules file. The agent MUST NOT proceed with automated interaction unless it has an independent basis for doing so (e.g., a prior cached version that has not expired). An absent rules file is not the same as a permissive rules file.
+If the venue's server returns a 404 response for the well-known path, the agent SHOULD interpret this as the venue not having published a RestaRules file. The agent MAY proceed with standard automated interaction, as no RestaRules constraints apply. An absent rules file does not imply any specific venue policy — it simply means the venue has not opted into the RestaRules protocol.
 
 ### Invalid JSON
 
@@ -503,6 +513,14 @@ If the response body appears truncated (e.g., incomplete JSON), the agent MUST t
 
 If the venue's server presents an expired, self-signed, or otherwise invalid TLS certificate, the agent MUST NOT proceed with the request. The agent MUST NOT bypass certificate validation to retrieve a rules file.
 
+### Server errors (HTTP 5xx)
+
+If the venue's server returns a 5xx error (such as 500 or 503), the agent SHOULD retry once after a reasonable delay. If the server provides a `Retry-After` header, the agent SHOULD respect it. If the retry also fails, the agent SHOULD abort the automated interaction or fall back to the most recently cached version of the rules file if one is available and has not expired.
+
+### Other client errors (HTTP 4xx)
+
+If the venue's server returns a 4xx error other than 404 (such as 403 Forbidden), the agent MUST treat the rules file as unavailable. The agent SHOULD abort the automated interaction, as the venue's server has actively refused the request.
+
 ## 11. Caching Considerations
 
 Agents SHOULD respect HTTP cache headers (`Cache-Control`, `ETag`, `Last-Modified`) when fetching rules files. Proper caching reduces load on venue servers and improves agent performance.
@@ -526,7 +544,7 @@ An agent implementation conforms to this specification if it meets all of the fo
 1. The agent fetches the rules file from the well-known URI path before initiating any interaction with a venue.
 2. The agent validates the fetched document against the RestaRules JSON Schema.
 3. The agent processes all fields according to the semantics defined in Section 8.
-4. The agent follows the Decision Procedure defined in Section 9 in the specified order, including short-circuit evaluation on denial.
+4. The agent follows the 10-step Decision Procedure defined in Section 9 in the specified order, including short-circuit evaluation on denial.
 5. The agent handles errors according to Section 10, defaulting to a fail-closed posture.
 6. The agent respects caching guidance as described in Section 11.
 7. The agent ignores fields it does not recognize, per the extensibility rule in Section 7.
@@ -641,3 +659,11 @@ The following example shows a rules file using all available fields, representin
 ```
 
 This venue uses a strict default policy — any optional permission field not specified is treated as denied. The venue requires AI disclosure, permits phone, web, and app interactions, limits booking requests to 3 per hour, requires human involvement for reservation modifications and parties over 6, prohibits resale and transfer, requires a non-refundable $50 deposit, and mandates that the agent confirm cancellation, deposit, and no-show policies with the user before proceeding. A $25 cancellation penalty applies within 2 hours of the reservation, and a $100 no-show fee applies after a 15-minute grace period.
+
+## 15. References
+
+* RFC 2119: Key words for use in RFCs to Indicate Requirement Levels. https://datatracker.ietf.org/doc/html/rfc2119
+* RFC 8615: Well-Known Uniform Resource Identifiers (URIs). https://datatracker.ietf.org/doc/html/rfc8615
+* ISO 8601: Date and time format. Calendar dates are formatted as YYYY-MM-DD.
+* ISO 4217: Currency codes. Three-letter alphabetic codes (e.g., USD, EUR, GBP).
+* JSON: The JavaScript Object Notation data interchange format. https://www.json.org
