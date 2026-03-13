@@ -99,6 +99,30 @@ Venues that use hosting platforms which do not support the `/.well-known/` path 
 
 ## 6. Security and Privacy Considerations
 
+### HTTPS Requirement
+
+Rules files MUST be served over HTTPS. This protects against man-in-the-middle attacks where a malicious intermediary could modify venue rules in transit — for example, changing `disclosure_required` to `false` or widening `allowed_channels` to permit unwanted contact methods.
+
+### SSRF Risk
+
+The `complaint_endpoint` field contains a URL provided by the venue. Agents that make HTTP requests to this URL MUST validate the URL before making the request. Agents SHOULD reject URLs that resolve to private or internal network addresses (e.g., `127.0.0.1`, `10.x.x.x`, `192.168.x.x`) to prevent server-side request forgery (SSRF) attacks.
+
+### Agent Identity Spoofing
+
+RestaRules v0.2 does not define a mechanism for verifying agent identity. The `rate_limits` field limits the number of actions an agent may perform within a time window, but the specification does not define how a venue identifies or distinguishes individual agents. A malicious agent could rotate identifiers to circumvent rate limits. Identity verification semantics are deferred to a future version of this specification.
+
+### Denial of Service via Rules Fetching
+
+Agents SHOULD cache rules files to avoid excessive requests to the venue's server. An agent that fetches the rules file before every individual action without caching could place unnecessary load on the venue's infrastructure. See Section 11 (Caching Considerations) for recommended caching behavior.
+
+### Cache Poisoning
+
+If a venue's hosting infrastructure is compromised, an attacker could serve a modified rules file. Agents SHOULD treat rules files as advisory and maintain independent safety constraints. A rules file that permits all actions with no restrictions should be treated with appropriate caution.
+
+### Fake or Malicious Rules Files
+
+A rules file is authored by the venue. Agents SHOULD verify that the rules file is served from the venue's own domain. A rules file served from a third-party domain claiming to represent a venue has no authority and SHOULD be ignored.
+
 ## 7. Document Format
 
 ## 8. Field Semantics
