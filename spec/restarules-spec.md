@@ -178,7 +178,219 @@ Venues MUST NOT rely on unknown fields being processed by agents. Any field that
 
 ### 8.1 Metadata Fields
 
+#### `schema_version`
+
+**Type:** String
+**Required:** Yes
+**Valid values:** `"0.1"`, `"0.2"`
+
+**Meaning:** Identifies which version of the RestaRules specification this rules file conforms to.
+
+**Agent behavior:** Agents SHOULD check this field before processing any other fields. If the value is not recognized, the agent SHOULD decline to process the file. See Section 7 (Versioning) and Section 10 (Error Handling).
+
+**Absence behavior:** This field is required. A rules file missing `schema_version` MUST fail schema validation.
+
+#### `venue_name`
+
+**Type:** String
+**Required:** Yes
+
+**Meaning:** The human-readable name of the venue.
+
+**Agent behavior:** Agents MAY use this field for display or logging purposes. It has no effect on compliance decisions.
+
+**Absence behavior:** This field is required. A rules file missing `venue_name` MUST fail schema validation.
+
+#### `venue_url`
+
+**Type:** String
+**Required:** Yes
+
+**Meaning:** The URL of the venue's website. MUST begin with `https://`.
+
+**Agent behavior:** Agents MAY use this field to verify that the rules file is served from the venue's own domain. It has no effect on compliance decisions.
+
+**Absence behavior:** This field is required. A rules file missing `venue_url` MUST fail schema validation.
+
+#### `last_updated`
+
+**Type:** String (ISO 8601 date)
+**Required:** Yes
+
+**Meaning:** The date when the rules file was last modified by the venue.
+
+**Agent behavior:** Agents MAY use this field to detect stale rules files or for logging purposes. It has no effect on compliance decisions.
+
+**Absence behavior:** This field is required. A rules file missing `last_updated` MUST fail schema validation.
+
+#### `effective_at`
+
+**Type:** String (ISO 8601 date)
+**Required:** Yes
+
+**Meaning:** The date when the rules in this file take effect. This allows a venue to publish updated rules in advance of their enforcement date.
+
+**Agent behavior:** Agents SHOULD compare this date to the current date. If `effective_at` is in the future, agents SHOULD continue using the previously cached rules file until the effective date arrives.
+
+**Absence behavior:** This field is required. A rules file missing `effective_at` MUST fail schema validation.
+
+#### `venue_currency`
+
+**Type:** String (ISO 4217 currency code, e.g., `"USD"`, `"EUR"`, `"GBP"`)
+**Required:** No
+
+**Meaning:** The currency used by the venue for monetary values in other fields (such as `deposit_policy` and `cancellation_policy`).
+
+**Agent behavior:** Agents SHOULD use this field to interpret monetary amounts elsewhere in the rules file. It has no effect on compliance decisions.
+
+**Absence behavior:** If absent, agents SHOULD NOT assume a default currency. Monetary amounts in other fields that lack an explicit `currency` sub-field are ambiguous.
+
+#### `venue_timezone`
+
+**Type:** String (IANA timezone identifier, e.g., `"America/New_York"`, `"Europe/London"`)
+**Required:** No
+
+**Meaning:** The timezone in which the venue operates.
+
+**Agent behavior:** Agents MAY use this field to interpret time-sensitive rules or for logging purposes. It has no effect on compliance decisions.
+
+**Absence behavior:** If absent, agents SHOULD NOT assume a default timezone.
+
 ### 8.2 Permission Fields
+
+Permission fields govern whether an agent action is allowed, denied, or requires escalation. When an optional permission field is absent from the rules file, the `default_policy` field determines the agent's behavior:
+
+- If `default_policy` is `"deny_if_unspecified"`, the agent MUST treat the absent field as a denial.
+- If `default_policy` is `"allow_if_unspecified"`, the agent MAY proceed as if the field permits the action.
+
+#### `default_policy`
+
+**Type:** String
+**Required:** Yes
+**Valid values:** `"deny_if_unspecified"`, `"allow_if_unspecified"`
+
+**Meaning:** Determines how agents should treat optional permission fields that are not present in the rules file. This is the venue's stance on ambiguity — a strict venue denies anything not explicitly permitted; a permissive venue allows anything not explicitly restricted.
+
+**Agent behavior:** Agents MUST apply this policy to every optional permission field that is absent. This field does not apply to informational fields or required fields.
+
+**Absence behavior:** This field is required. A rules file missing `default_policy` MUST fail schema validation.
+
+#### `disclosure_required`
+
+**Type:** Object containing `enabled` (boolean) and `phrasing` (string)
+**Required:** Yes
+
+**Meaning:** Specifies whether the agent must disclose its automated nature when interacting with venue staff.
+
+**Agent behavior:** If `enabled` is `true`, the agent MUST identify itself as automated before or during any interaction with the venue. The `phrasing` field provides the venue's preferred disclosure language. Agents SHOULD use the provided phrasing where possible, but MAY use equivalent language if the exact phrasing is impractical for the interaction channel.
+
+**Absence behavior:** This field is required. A rules file missing `disclosure_required` MUST fail schema validation.
+
+#### `allowed_channels`
+
+**Type:** Array of strings
+**Required:** Yes
+**Valid values:** `"phone"`, `"web"`, `"sms"`, `"email"`, `"app"`
+
+**Meaning:** The communication channels through which the venue permits agent interactions.
+
+**Agent behavior:** Before initiating any interaction, the agent MUST check whether the intended channel is listed in this array. If the channel is not listed, the agent MUST NOT proceed on that channel.
+
+**Absence behavior:** This field is required. A rules file missing `allowed_channels` MUST fail schema validation.
+
+#### `rate_limits`
+
+**Type:** Array of rate limit rule objects
+**Required:** No
+**Classification:** Permission
+
+**Meaning:** Defines limits on how frequently an agent may perform specific actions. Each rule object contains:
+
+- `action` (string): The action being limited (e.g., `"booking_request"`)
+- `limit` (integer): Maximum number of allowed attempts
+- `window_value` (integer): The size of the time window
+- `window_unit` (string): The unit of the time window (e.g., `"hour"`, `"day"`)
+- `applies_to` (array, optional): Specific action types this rule applies to, referencing the shared `action_type` enum (`"check_availability"`, `"create_booking"`, `"modify_booking"`, `"cancel_booking"`)
+
+**Agent behavior:** Agents MUST track their own action counts and respect the limits defined. If an `applies_to` array is present, the rule applies only to the listed action types. If `applies_to` is absent, the rule applies to all actions matching the `action` field.
+
+**Absence behavior:** Subject to `default_policy`.
+
+#### `human_escalation_required`
+
+**Type:** Object containing `conditions` (array of strings)
+**Required:** No
+**Classification:** Permission
+**Valid condition values:** `"reservation_modification"` (additional values may be defined in future versions)
+
+**Meaning:** Specifies conditions under which the agent MUST transfer the interaction to a human rather than proceeding automatically. In v0.2, party-size escalation is handled by `party_size_policy` rather than this field.
+
+**Agent behavior:** If the current interaction matches any listed condition, the agent MUST escalate to a human and MUST NOT proceed with the automated action.
+
+**Absence behavior:** Subject to `default_policy`.
+
+#### `third_party_restrictions`
+
+**Type:** Object containing `no_resale` (boolean), `no_transfer` (boolean), and `identity_bound_booking` (boolean)
+**Required:** No
+**Classification:** Permission
+
+**Meaning:** Specifies restrictions on third-party involvement in the booking.
+
+- `no_resale`: If `true`, the reservation MUST NOT be resold or listed on secondary markets.
+- `no_transfer`: If `true`, the reservation MUST NOT be transferred to a different party.
+- `identity_bound_booking`: If `true`, the reservation is bound to the identity of the person who made it and MUST be presented by that person.
+
+**Agent behavior:** Agents acting on behalf of third-party services (resale platforms, concierge services that transfer bookings) MUST check these restrictions before proceeding. If any applicable restriction is `true`, the agent MUST NOT proceed with the restricted action.
+
+**Absence behavior:** Subject to `default_policy`.
+
+#### `party_size_policy`
+
+**Type:** Object containing `auto_book_max` (integer, required), `human_review_above` (integer, optional), and `large_party_channels` (array of strings, optional)
+**Required:** No
+**Classification:** Permission
+
+**Meaning:** Defines how the venue handles party size in automated bookings.
+
+- `auto_book_max`: The maximum party size an agent may book automatically without human involvement.
+- `human_review_above`: If present, party sizes above this number require human review.
+- `large_party_channels`: If present, specifies which channels should be used for large party inquiries.
+
+**Agent behavior:** If the requested party size exceeds `auto_book_max`, the agent MUST NOT book automatically and MUST escalate to a human. If `large_party_channels` is provided, the agent SHOULD direct the large party inquiry through one of the listed channels.
+
+**Absence behavior:** Subject to `default_policy`.
+
+**Migration note:** In v0.1, party-size logic was part of `human_escalation_required` via a `party_size_auto_max` sub-field. In v0.2, party-size handling moved to this dedicated field. Both representations cannot coexist in the same rules file.
+
+#### `deposit_policy`
+
+**Type:** Object containing `required` (boolean, required), `amount` (number, optional), `currency` (string, optional), and `refundable` (boolean, optional)
+**Required:** No
+**Classification:** Permission
+
+**Meaning:** Specifies whether the venue requires a deposit for bookings and, if so, the details.
+
+- `required`: Whether a deposit is required.
+- `amount`: The deposit amount.
+- `currency`: The currency of the deposit (ISO 4217). If absent, agents SHOULD refer to `venue_currency`.
+- `refundable`: Whether the deposit is refundable.
+
+**Agent behavior:** If `required` is `true`, the agent MUST inform the user about the deposit requirement before completing a booking. The agent MUST NOT complete a booking that requires a deposit without the user's acknowledgment.
+
+**Absence behavior:** Subject to `default_policy`.
+
+#### `user_acknowledgment_requirements`
+
+**Type:** Array of strings
+**Required:** No
+**Classification:** Permission
+
+**Meaning:** A list of policy names that the agent must confirm with the user before proceeding. Each string references a policy area (e.g., `"cancellation_policy"`, `"deposit_policy"`, `"no_show_policy"`).
+
+**Agent behavior:** Before completing an action, the agent MUST present each listed policy to the user and obtain acknowledgment. The agent MUST NOT proceed until the user has acknowledged all listed policies. If a referenced policy name does not correspond to a field present in the rules file, the agent SHOULD handle this gracefully (e.g., inform the user that the venue requires acknowledgment of a policy that is not described in the rules file).
+
+**Absence behavior:** Subject to `default_policy`.
 
 ### 8.3 Informational Fields
 
