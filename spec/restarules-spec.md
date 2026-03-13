@@ -521,9 +521,33 @@ Agents MUST NOT cache a rules file indefinitely. Even if cache headers permit lo
 
 ### 12.1 Agent Conformance
 
+An agent implementation conforms to this specification if it meets all of the following requirements:
+
+1. The agent fetches the rules file from the well-known URI path before initiating any interaction with a venue.
+2. The agent validates the fetched document against the RestaRules JSON Schema.
+3. The agent processes all fields according to the semantics defined in Section 8.
+4. The agent follows the Decision Procedure defined in Section 9 in the specified order, including short-circuit evaluation on denial.
+5. The agent handles errors according to Section 10, defaulting to a fail-closed posture.
+6. The agent respects caching guidance as described in Section 11.
+7. The agent ignores fields it does not recognize, per the extensibility rule in Section 7.
+
+An agent that does not fetch and process the rules file before interacting with a venue MUST NOT claim RestaRules compliance.
+
 ### 12.2 Venue Conformance
 
+A venue conforms to this specification if it meets all of the following requirements:
+
+1. The venue publishes a rules file at the well-known URI path `/.well-known/agent-venue-rules.json`.
+2. The rules file is valid JSON and passes validation against the RestaRules JSON Schema.
+3. The rules file is served over HTTPS with a `Content-Type` of `application/json`.
+4. All required fields defined in Section 7 are present and contain valid values.
+5. The venue updates the `last_updated` field whenever the rules file is modified.
+
 ## 13. IANA / Registry Considerations
+
+This specification uses the well-known URI mechanism as described in [RFC 8615](https://datatracker.ietf.org/doc/html/rfc8615). The URI suffix used is `agent-venue-rules.json`.
+
+This suffix is not currently registered with IANA. If this specification gains adoption sufficient to warrant formal registration, a registration request will be submitted in accordance with RFC 8615, Section 3.1.
 
 ## 14. Examples
 
