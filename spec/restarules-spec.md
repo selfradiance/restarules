@@ -125,6 +125,55 @@ A rules file is authored by the venue. Agents SHOULD verify that the rules file 
 
 ## 7. Document Format
 
+A RestaRules file MUST be a JSON object. It MUST NOT be a JSON array, a string, or any other JSON type.
+
+### Required Fields
+
+Every rules file MUST include the following fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `schema_version` | String | Version of the RestaRules specification. Valid values: `"0.1"`, `"0.2"`. |
+| `venue_name` | String | Name of the venue. |
+| `venue_url` | String | URL of the venue's website. MUST begin with `https://`. |
+| `last_updated` | String | ISO 8601 date when the file was last edited. |
+| `effective_at` | String | ISO 8601 date when the rules take effect. |
+| `default_policy` | String | How agents should treat optional permission fields that are absent. Valid values: `"deny_if_unspecified"`, `"allow_if_unspecified"`. |
+| `disclosure_required` | Object | Whether the agent must identify itself as automated. Contains `enabled` (boolean) and `phrasing` (string). |
+| `allowed_channels` | Array | List of communication channels the venue permits. Valid values: `"phone"`, `"web"`, `"sms"`, `"email"`, `"app"`. |
+
+### Optional Fields
+
+The following fields are optional. Their behavior when absent is governed by the `default_policy` field (for permission fields) or is simply omitted from the agent's decision (for informational fields). See Section 8 (Field Semantics) for the classification of each field.
+
+| Field | Type | Classification |
+|---|---|---|
+| `venue_currency` | String | Metadata |
+| `venue_timezone` | String | Metadata |
+| `rate_limits` | Array | Permission |
+| `human_escalation_required` | Object | Permission |
+| `third_party_restrictions` | Object | Permission |
+| `party_size_policy` | Object | Permission |
+| `deposit_policy` | Object | Permission |
+| `user_acknowledgment_requirements` | Array | Permission |
+| `complaint_endpoint` | String | Informational |
+| `cancellation_policy` | Object | Informational |
+| `no_show_policy` | Object | Informational |
+
+### Versioning
+
+The `schema_version` field indicates which version of this specification the rules file conforms to. Agents SHOULD check this field before processing the file.
+
+An agent that encounters a `schema_version` value it does not recognize SHOULD decline to process the file automatically. An unrecognized version means the document structure may have changed in ways the agent cannot safely assume.
+
+This is distinct from unknown fields (see Extensibility below). An unrecognized version applies to the entire document. An unknown field is a single addition within a recognized version.
+
+### Extensibility
+
+Future versions of this specification may introduce additional fields. Agents MUST ignore fields they do not recognize. This ensures forward compatibility — a rules file authored for a newer version of the specification can still be partially processed by agents built for an earlier version, provided the `schema_version` is recognized.
+
+Venues MUST NOT rely on unknown fields being processed by agents. Any field that governs agent behavior must be defined in this specification.
+
 ## 8. Field Semantics
 
 ### 8.1 Metadata Fields
