@@ -148,5 +148,11 @@ RESTARULES_PROJECT_CONTEXT.md
 AGENT_OPERATING_CONTRACT.md
 process-template*.md
 
+# Claude Code
+.claude/
+
+# Misc
+articles stuff/
+
 # macOS
 .DS_Store
