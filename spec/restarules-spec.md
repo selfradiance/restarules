@@ -443,6 +443,30 @@ Informational fields provide data that agents SHOULD surface to users but MUST N
 
 ## 9. Decision Procedure
 
+This section defines the algorithm an agent MUST follow when processing a RestaRules file. The steps are evaluated in order. If any step results in a denial, the agent MUST stop immediately and MUST NOT proceed to subsequent steps.
+
+**Step 1: Validate the rules file.** The agent MUST validate the fetched document against the RestaRules JSON Schema. If validation fails, the agent MUST treat the file as invalid and follow the error handling procedure in Section 10.
+
+**Step 2: Check `disclosure_required`.** If `disclosure_required.enabled` is `true`, the agent MUST disclose its automated nature using the venue's preferred phrasing or equivalent language.
+
+**Step 3: Check `allowed_channels`.** The agent MUST verify that its intended communication channel is listed in the `allowed_channels` array. If the channel is not listed, the agent MUST deny the action.
+
+**Step 4: Check `rate_limits`.** If `rate_limits` is present, the agent MUST verify that the intended action does not exceed any applicable rate limit. If a limit would be exceeded, the agent MUST deny the action. If `rate_limits` is absent, apply `default_policy`.
+
+**Step 5: Check `human_escalation_required`.** If `human_escalation_required` is present and the current interaction matches any listed condition, the agent MUST escalate to a human and deny the automated action. If absent, apply `default_policy`.
+
+**Step 6: Check `party_size_policy`.** If `party_size_policy` is present and the requested party size exceeds `auto_book_max`, the agent MUST escalate to a human and deny the automated booking. If `large_party_channels` is provided, the agent SHOULD direct the inquiry through one of the listed channels. If absent, apply `default_policy`.
+
+**Step 7: Check `deposit_policy`.** If `deposit_policy` is present and `required` is `true`, the agent MUST inform the user of the deposit requirement and obtain acknowledgment before proceeding. If absent, apply `default_policy`.
+
+**Step 8: Check `user_acknowledgment_requirements`.** If `user_acknowledgment_requirements` is present, the agent MUST present each listed policy to the user and obtain acknowledgment before proceeding. The agent MUST NOT proceed until all listed policies have been acknowledged. If absent, apply `default_policy`.
+
+**Step 9: Check `third_party_restrictions`.** If `third_party_restrictions` is present and any applicable restriction is `true`, the agent MUST deny the restricted action. If absent, apply `default_policy`.
+
+**Step 10: Surface informational fields.** The agent SHOULD present any available informational fields (`complaint_endpoint`, `cancellation_policy`, `no_show_policy`) to the user at the appropriate point in the interaction. These fields MUST NOT block or deny any action.
+
+**Step 11: Apply `default_policy` for any remaining undefined permission fields.** If any optional permission field was not present in the rules file and was not already evaluated in a previous step, the agent MUST apply the `default_policy` to determine whether to allow or deny the action.
+
 ## 10. Error Handling
 
 ## 11. Caching Considerations
