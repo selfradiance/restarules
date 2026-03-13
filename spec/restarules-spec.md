@@ -505,6 +505,18 @@ If the venue's server presents an expired, self-signed, or otherwise invalid TLS
 
 ## 11. Caching Considerations
 
+Agents SHOULD respect HTTP cache headers (`Cache-Control`, `ETag`, `Last-Modified`) when fetching rules files. Proper caching reduces load on venue servers and improves agent performance.
+
+If the venue's server provides no cache headers, agents SHOULD refresh the rules file no more frequently than once every 24 hours.
+
+Venues SHOULD set appropriate `Cache-Control` headers based on how frequently their rules change:
+
+- Venues that rarely change rules: `Cache-Control: public, max-age=86400` (24 hours)
+- Venues that change rules occasionally: `Cache-Control: public, max-age=3600` (1 hour)
+- Venues that need rapid rule updates: `Cache-Control: public, max-age=900` (15 minutes)
+
+Agents MUST NOT cache a rules file indefinitely. Even if cache headers permit long-lived caching, agents SHOULD re-fetch the rules file at least once every 7 days to ensure they are operating on reasonably current information.
+
 ## 12. Conformance
 
 ### 12.1 Agent Conformance
