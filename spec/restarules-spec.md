@@ -469,6 +469,40 @@ This section defines the algorithm an agent MUST follow when processing a RestaR
 
 ## 10. Error Handling
 
+This section defines how agents MUST behave when they encounter errors fetching or processing a rules file. The default posture is fail-closed: if an agent cannot retrieve, parse, or validate a rules file, it MUST NOT proceed with automated interaction as if no rules exist.
+
+### Rules file not found (HTTP 404)
+
+If the venue's server returns a 404 response for the well-known path, the agent SHOULD interpret this as the venue not having published a rules file. The agent MUST NOT proceed with automated interaction unless it has an independent basis for doing so (e.g., a prior cached version that has not expired). An absent rules file is not the same as a permissive rules file.
+
+### Invalid JSON
+
+If the response body is not valid JSON, the agent MUST ignore the file and MUST NOT proceed with automated interaction based on its contents.
+
+### Invalid content type
+
+If the response `Content-Type` is not `application/json`, the agent SHOULD ignore the file. The agent MAY attempt to parse the body as JSON regardless, but SHOULD treat a non-JSON content type as a warning that the file may not be a valid rules document.
+
+### Schema validation failure
+
+If the JSON document fails validation against the RestaRules schema (e.g., missing required fields, invalid field types), the agent MUST treat the file as invalid. The agent MUST NOT selectively process fields from an invalid file. The agent SHOULD abort the automated interaction.
+
+### Unsupported `schema_version`
+
+If the `schema_version` field contains a value the agent does not recognize, the agent SHOULD decline to process the file. An unrecognized version means the document structure may have changed in ways the agent cannot safely interpret. See Section 7 (Versioning).
+
+### Network timeout
+
+If the agent cannot reach the venue's server within a reasonable timeout period, the agent MUST NOT proceed as if no rules exist. The agent SHOULD retry once. If the retry also fails, the agent SHOULD abort the automated interaction or fall back to the most recently cached version of the rules file if one is available and has not expired.
+
+### Truncated response
+
+If the response body appears truncated (e.g., incomplete JSON), the agent MUST treat the response as invalid and MUST NOT attempt to process partial data.
+
+### Expired or invalid TLS certificate
+
+If the venue's server presents an expired, self-signed, or otherwise invalid TLS certificate, the agent MUST NOT proceed with the request. The agent MUST NOT bypass certificate validation to retrieve a rules file.
+
 ## 11. Caching Considerations
 
 ## 12. Conformance
