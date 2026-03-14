@@ -204,7 +204,7 @@ An optional top-level object constraining how far ahead or how close to the curr
 
 **Scope:** Applies to `create_booking` only. Other action types skip booking window evaluation.
 
-**Timezone requirement:** Enforcement requires `venue_timezone` to be present. Without it, the booking window is informational only — the agent surfaces the values but does not enforce them.
+**Timezone requirement:** Enforcement requires `venue_timezone` to be present. Without it, the booking window is informational only — the agent surfaces the values but does not enforce them. Agents must pass timezone-qualified ISO 8601 timestamps (e.g., `"2026-03-15T18:00:00-05:00"`) when evaluating booking windows.
 
 **`default_policy` carve-out:** Absent `booking_window` never blocks, regardless of `default_policy`. This is an explicit carve-out — unlike other permission fields, a missing booking window is always treated as "no restriction."
 

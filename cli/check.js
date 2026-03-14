@@ -18,9 +18,12 @@
  *                     [--action <action>] [--attempt-count <n>]
  *                     [--party-size <n>] [--escalation-condition <condition>]
  *                     [--third-party <true|false>]
+ *                     [--target-time <ISO 8601 datetime>]
  *
  * Example:
  *   node cli/check.js --rules schema/agent-venue-rules-example.json --channel phone --disclosed true
+ *   node cli/check.js --rules schema/agent-venue-rules-example.json --channel web --disclosed true \
+ *     --action create_booking --target-time "2026-03-20T19:00:00-05:00"
  */
 
 const fs = require("fs");
