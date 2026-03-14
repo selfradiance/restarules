@@ -4,7 +4,7 @@
 
 **Status:** Draft
 
-**Specification Version:** Draft 0.2
+**Specification Version:** Draft 0.3
 
 **Date:** March 2026
 
@@ -111,7 +111,7 @@ The `complaint_endpoint` field contains a URL provided by the venue. Agents that
 
 ### Agent Identity Spoofing
 
-RestaRules v0.2 does not define a mechanism for verifying agent identity. The `rate_limits` field limits the number of actions an agent may perform within a time window, but the specification does not define how a venue identifies or distinguishes individual agents. A malicious agent could rotate identifiers to circumvent rate limits. Identity verification semantics are deferred to a future version of this specification.
+RestaRules v0.3 does not define a mechanism for verifying agent identity. The `rate_limits` field limits the number of actions an agent may perform within a time window, but the specification does not define how a venue identifies or distinguishes individual agents. A malicious agent could rotate identifiers to circumvent rate limits. Identity verification semantics are deferred to a future version of this specification.
 
 ### Denial of Service via Rules Fetching
 
@@ -135,7 +135,7 @@ Every rules file MUST include the following fields:
 
 | Field | Type | Description |
 |---|---|---|
-| `schema_version` | String | Version of the RestaRules specification. Valid values: `"0.1"`, `"0.2"`. |
+| `schema_version` | String | Version of the RestaRules specification. Valid values: `"0.1"`, `"0.2"`, `"0.3"`. |
 | `venue_name` | String | Name of the venue. |
 | `venue_url` | String | URL of the venue's website. MUST begin with `https://`. |
 | `last_updated` | String | ISO 8601 calendar date (YYYY-MM-DD) when the file was last edited. |
@@ -170,7 +170,7 @@ The `schema_version` field indicates which version of this specification the rul
 
 An agent that encounters a `schema_version` value it does not recognize MUST NOT process the file. An unrecognized version means the document structure may have changed in ways the agent cannot safely assume.
 
-Agents MUST support `schema_version` `"0.2"`. Support for earlier versions (such as `"0.1"`) is OPTIONAL.
+Agents MUST support `schema_version` `"0.3"`. Support for earlier versions (such as `"0.1"` and `"0.2"`) is OPTIONAL.
 
 This is distinct from unknown fields (see Extensibility below). An unrecognized version applies to the entire document. An unknown field is a single addition within a recognized version.
 
@@ -188,7 +188,7 @@ Venues MUST NOT rely on unknown fields being processed by agents. Any field that
 
 **Type:** String
 **Required:** Yes
-**Valid values:** `"0.1"`, `"0.2"`
+**Valid values:** `"0.1"`, `"0.2"`, `"0.3"`
 
 **Meaning:** Identifies which version of the RestaRules specification this rules file conforms to.
 

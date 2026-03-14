@@ -4,16 +4,16 @@ This folder contains the formal schema definition and example files for RestaRul
 
 ## Files
 
-- `agent-venue-rules.schema.json` — The formal JSON Schema definition (Draft 2020-12). This is the source of truth for what a valid rules file looks like. Current version: v0.2.
+- `agent-venue-rules.schema.json` — The formal JSON Schema definition (Draft 2020-12). This is the source of truth for what a valid rules file looks like. Current version: v0.3.
 - `agent-venue-rules-example.json` — A complete example file for a fictional restaurant (The Golden Fork), demonstrating all available fields.
 
 ## Schema Version
 
-The current schema version is **0.2**. The `schema_version` field accepts both `"0.1"` and `"0.2"` for backward compatibility.
+The current schema version is **0.3**. The `schema_version` field accepts `"0.1"`, `"0.2"`, and `"0.3"` for backward compatibility.
 
 ## Required Fields (8)
 
-- `schema_version` — `"0.1"` or `"0.2"`
+- `schema_version` — `"0.1"`, `"0.2"`, or `"0.3"`
 - `venue_name` — The restaurant's name
 - `venue_url` — The restaurant's website (HTTPS required)
 - `last_updated` — When the file was last edited (YYYY-MM-DD)
@@ -32,6 +32,12 @@ These fields control whether an agent action is allowed. When absent, agents con
 - `party_size_policy` — Party-size thresholds for auto-booking vs human review (`auto_book_max` required, plus optional `human_review_above` and `large_party_channels`)
 - `deposit_policy` — Deposit requirements for reservations (`required` boolean, plus optional `amount`, `currency`, `refundable`)
 - `user_acknowledgment_requirements` — Array of policy names the agent must confirm with the user before completing a booking
+- `allowed_channels_by_action` — Per-action channel overrides. When present for an action, fully replaces base `allowed_channels` for that action
+- `booking_window` — Booking lead-time constraints (`min_hours_ahead`, `max_days_ahead`). Applies to `create_booking` only. Absent booking window never blocks (explicit `default_policy` carve-out)
+
+### New in v0.3: Rate Limit Sub-field
+
+- `rate_limits[].counting_scope` — Declares counting scope for rate limit attempts: `per_agent` (default), `per_user`, or `per_session`
 
 ## Optional Fields — Informational (not governed by `default_policy`)
 
