@@ -1,4 +1,4 @@
-// RestaRules Voice Demo — app.js
+// RestaRules Agent Compliance Demo — app.js
 // SDK is available as window.RestaRulesSDK (loaded from bundle.js)
 
 (function () {

@@ -382,7 +382,7 @@ RestaRules is in active development. Current version: **v0.3**.
 - **CLI compliance checker** (`cli/check.js`) — validates a rules file and checks agent compliance against all v0.1, v0.2, and v0.3 fields
 - **Reference agent** (`reference-agent/`) — fetches a live rules file, validates it, and evaluates compliance for simulated booking scenarios
 - **Agent SDK** (`sdk/`) — npm-ready library exporting `validateRules` (JSON Schema validation) and `evaluateCompliance` (full decision engine)
-- **Browser voice demo** — live at [selfradiance.github.io/restarules/demo/voice/](https://selfradiance.github.io/restarules/demo/voice/). An agent fetches live venue rules, evaluates compliance, and speaks results aloud using the Web Speech API.
+- **Agent Compliance Demo** — live at [selfradiance.github.io/restarules/demo/voice/](https://selfradiance.github.io/restarules/demo/voice/). An agent fetches live venue rules, evaluates compliance, and speaks results aloud using the Web Speech API.
 - **107 tests** across schema validation, CLI compliance, reference agent, and SDK
 - **CI** via GitHub Actions (runs on every push and PR to main)
 
@@ -402,7 +402,7 @@ Then require it in your project:
 const { validateRules, evaluateCompliance } = require('./sdk');
 ```
 
-## Browser Voice Demo
+## Agent Compliance Demo
 
 A browser-based demo that proves the RestaRules thesis end-to-end: an AI agent fetches the live Bella Notte rules file from GitHub Pages, evaluates compliance for five booking scenarios using the real SDK, and speaks the results aloud using the Web Speech API. No external accounts, no server hosting — runs entirely in the browser.
 
