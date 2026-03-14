@@ -549,6 +549,14 @@ Note: If `large_party_channels` specifies channels not in the effective channel 
 
 If the action is not `create_booking`, or if `booking_window` is absent, skip this step. A missing `booking_window` MUST NOT cause a denial regardless of `default_policy` (see Section 8.2, `booking_window` field definition).
 
+**Implementation Note:** Conforming implementations SHOULD return a non-actionable result (rather than a denial) when booking window evaluation cannot proceed due to:
+
+- An invalid or unrecognized `venue_timezone` value
+- A `targetTime` parameter missing timezone offset information
+- A contradictory booking window configuration (where `min_hours_ahead` ≥ `max_days_ahead` × 24)
+
+These conditions indicate incomplete or malformed input rather than a policy violation, and SHOULD be surfaced as warnings to the calling agent.
+
 **Step 8: Check `deposit_policy`.** If `deposit_policy` is present and `required` is `true`, the agent MUST inform the user of the deposit requirement and obtain acknowledgment before proceeding. If absent, apply `default_policy`.
 
 **Step 9: Check `user_acknowledgment_requirements`.** If `user_acknowledgment_requirements` is present, the agent MUST present each listed policy to the user and obtain acknowledgment before proceeding. The agent MUST NOT proceed until all listed policies have been acknowledged. If absent, apply `default_policy`.
