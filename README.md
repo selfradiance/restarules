@@ -91,6 +91,16 @@ The following are **informational fields** — they are never governed by `defau
 
 `venue_currency` and `venue_timezone` are **metadata fields** — they provide context but are not governed by `default_policy`.
 
+## Why Voluntary Compliance Works
+
+RestaRules follows the same enforcement model as `robots.txt`. No law forces web crawlers to obey `robots.txt`, and no law forces AI agents to obey a RestaRules file. But legitimate crawlers comply with `robots.txt` because the alternative — getting blocked, blacklisted, or sued — is worse. The norm works because the cost of ignoring it exceeds the cost of following it.
+
+The same dynamic applies to agentic commerce. An AI agent that ignores venue rules will get blocked by booking platforms, flagged by fraud detection systems, and eventually excluded from the ecosystem it depends on. For any agent that wants long-term access to restaurant interactions, compliance is the rational choice.
+
+The stakes are actually higher here than they were for web crawling. A rogue crawler costs a website some extra bandwidth. A rogue booking agent costs a restaurant a no-show, a lost table, or an angry customer. That asymmetry makes the incentive to comply stronger, not weaker — venues have more reason to enforce, and agents have more reason to cooperate.
+
+RestaRules doesn't need universal adoption to be useful. Even partial adoption creates value, the same way `robots.txt` was useful long before every crawler respected it. One venue publishing rules is one venue that agents can interact with more reliably. As more venues publish and more agents check, the network effect compounds — but the protocol delivers value from day one.
+
 ## Decision Procedure for Agents
 
 When an agent evaluates a venue's rules file, it must follow this procedure:
