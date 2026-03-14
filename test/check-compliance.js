@@ -358,4 +358,26 @@ try {
   process.exit(1);
 }
 
+// Test 18: counting_scope is surfaced in CLI output
+try {
+  const countingScopeRules = path.join(__dirname, "fixtures", "test-venue-with-counting-scope.json");
+  const cmd = `node ${cliPath} --rules ${countingScopeRules} --channel phone --disclosed true`;
+  const output = execSync(cmd, { encoding: "utf8" });
+  if (output.includes("rate_limit_counting_scope") && output.includes("per_user") && output.includes("per_agent")) {
+    console.log(
+      "PASS: counting_scope is surfaced in CLI output (per_user explicit, per_agent default)"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected counting_scope to appear in CLI output"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on counting_scope test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
 console.log("\nAll compliance checker tests passed.");

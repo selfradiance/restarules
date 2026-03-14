@@ -38,6 +38,7 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
           windowValue: match.window_value,
           windowUnit: match.window_unit,
           appliesTo: match.applies_to || null,
+          countingScope: match.counting_scope || "per_agent",
         };
       } else {
         result.rateLimit = {

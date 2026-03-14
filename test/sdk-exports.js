@@ -146,4 +146,19 @@ assert.strictEqual(g1.rateLimit.windowValue, 1, "window_value should be 1");
 assert.strictEqual(g1.rateLimit.windowUnit, "hour", "window_unit should be hour");
 console.log("PASS: G1 — rate limit check with matching action returns limit info");
 
-console.log("\nSDK tests: 16 passed, 0 failed.");
+// ============================================================
+// Category H: Counting Scope
+// ============================================================
+
+// H1: Rate limit with counting_scope: "per_user" surfaces in output
+const countingScopeVenue = require("../test/fixtures/test-venue-with-counting-scope.json");
+const h1 = sdk.evaluateCompliance(countingScopeVenue, { action: "booking_request", attempts: 1 });
+assert.strictEqual(h1.rateLimit.countingScope, "per_user", "counting_scope should be per_user");
+console.log("PASS: H1 — rate limit with counting_scope per_user surfaces in output");
+
+// H2: Rate limit without counting_scope defaults to "per_agent"
+const h2 = sdk.evaluateCompliance(countingScopeVenue, { action: "inquiry", attempts: 1 });
+assert.strictEqual(h2.rateLimit.countingScope, "per_agent", "absent counting_scope should default to per_agent");
+console.log("PASS: H2 — rate limit without counting_scope defaults to per_agent");
+
+console.log("\nSDK tests: 18 passed, 0 failed.");

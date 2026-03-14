@@ -222,6 +222,14 @@ if (reasons.length === 0) {
   reasons.forEach((r) => console.log(`  - ${r}`));
 }
 
+if (rules.rate_limits) {
+  for (const limit of rules.rate_limits) {
+    const scope = limit.counting_scope || "per_agent";
+    const suffix = limit.counting_scope ? "" : " (default)";
+    console.log(`rate_limit_counting_scope: ${limit.action} — ${scope}${suffix}`);
+  }
+}
+
 if (rules.deposit_policy && rules.deposit_policy.required) {
   const dp = rules.deposit_policy;
   console.log(`deposit_required: ${dp.amount} ${dp.currency || ""}${dp.refundable ? " (refundable)" : " (non-refundable)"}`);

@@ -138,5 +138,20 @@ assert(
   t16.rateLimit.appliesTo !== null && t16.rateLimit.appliesTo.includes("create_booking")
 );
 
+// Test 17: counting_scope surfaced on rate limit result
+const countingScopeRules = require("./fixtures/test-venue-with-counting-scope.json");
+const t17 = evaluateCompliance(countingScopeRules, { action: "booking_request", attempts: 1 });
+assert(
+  "rate limit result includes countingScope per_user when set",
+  t17.rateLimit.countingScope === "per_user"
+);
+
+// Test 18: absent counting_scope defaults to per_agent in rate limit result
+const t18 = evaluateCompliance(countingScopeRules, { action: "inquiry", attempts: 1 });
+assert(
+  "rate limit result defaults countingScope to per_agent when absent",
+  t18.rateLimit.countingScope === "per_agent"
+);
+
 console.log(`\nReference agent tests: ${passed} passed, ${failed} failed.`);
 if (failed > 0) process.exit(1);
