@@ -379,7 +379,7 @@ RestaRules is in active development. Current version: **v0.3**.
 
 **What's built:**
 - **v0.3 JSON Schema** (Draft 2020-12) — covers disclosure, channels, rate limits (with counting scope), per-action channel overrides, booking window, human escalation, third-party restrictions, party-size policy, deposit policy, cancellation policy, no-show policy, and user acknowledgment requirements
-- **CLI compliance checker** (`cli/check.js`) — validates a rules file and checks agent compliance against all v0.1, v0.2, and v0.3 fields
+- **CLI compliance checker** (`cli/check.js`) — validates a rules file and checks agent compliance against all v0.1, v0.2, and v0.3 fields. Exit codes: 0 = ALLOW, 1 = DENY, 2 = invalid input or schema validation failure
 - **Reference agent** (`reference-agent/`) — fetches a live rules file, validates it, and evaluates compliance for simulated booking scenarios
 - **Agent SDK** (`sdk/`) — npm-ready library exporting `validateRules` (JSON Schema validation) and `evaluateCompliance` (full decision engine)
 - **Agent Compliance Demo** — live at [selfradiance.github.io/restarules/demo/voice/](https://selfradiance.github.io/restarules/demo/voice/). An agent fetches live venue rules, evaluates compliance, and speaks results aloud using the Web Speech API.

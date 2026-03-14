@@ -120,7 +120,7 @@ if (!valid) {
   validate.errors.forEach((err) => {
     console.log(`  - ${err.instancePath || "/"}: ${err.message}`);
   });
-  process.exit(0);
+  process.exit(2);
 }
 
 // --- Evaluate rules ---
@@ -351,4 +351,9 @@ if (rules.booking_window) {
 
 if (rules.complaint_endpoint) {
   console.log(`complaint_endpoint: ${rules.complaint_endpoint}`);
+}
+
+// Exit code: 0 = ALLOW, 1 = DENY, 2 = invalid input or schema failure
+if (reasons.length > 0) {
+  process.exit(1);
 }
