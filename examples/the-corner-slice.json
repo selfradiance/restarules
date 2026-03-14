@@ -1,0 +1,27 @@
+{
+  "schema_version": "0.2",
+  "venue_name": "The Corner Slice",
+  "venue_url": "https://www.thecornerslice.example.com",
+  "last_updated": "2026-03-13",
+  "effective_at": "2026-03-13",
+  "default_policy": "allow_if_unspecified",
+  "venue_currency": "USD",
+  "venue_timezone": "America/Chicago",
+  "disclosure_required": {
+    "enabled": true,
+    "phrasing": "Just let us know you're an AI — no big deal."
+  },
+  "allowed_channels": ["phone", "web", "app", "sms"],
+  "rate_limits": [
+    {
+      "action": "booking_request",
+      "limit": 10,
+      "window_value": 1,
+      "window_unit": "hour"
+    }
+  ],
+  "party_size_policy": {
+    "auto_book_max": 10
+  },
+  "complaint_endpoint": "https://www.thecornerslice.example.com/feedback"
+}
