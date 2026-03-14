@@ -65,6 +65,10 @@ Every optional field is classified as either **permission** or **informational**
 
 This classification is a core design principle established during schema development.
 
+## URL Validation
+
+The schema validates URL fields (`venue_url`, `complaint_endpoint`) with a `^https://` pattern prefix check only. Full URL validation (RFC 3986 compliance, domain resolution, path safety) is beyond the scope of JSON Schema. Agents MUST perform their own URL validation before following any URL from a rules file. See the Security Considerations section of the [formal specification](../spec/restarules-spec.md) for SSRF prevention guidance and URL handling requirements.
+
 ## How to Validate
 
 You can validate any rules file against the schema using the project's test suite:

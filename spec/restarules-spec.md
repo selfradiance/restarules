@@ -433,6 +433,8 @@ If a venue has no mechanism for identifying agents or users at the declared scop
 
 When `user_acknowledgment_requirements` references a policy field that is not present in the rules file, agents MUST silently ignore that entry. The absence of a referenced policy field MUST NOT cause an error, and MUST NOT trigger a denial under `default_policy` for the absent policy itself. The acknowledgment skip is clean — it does not cascade into a `default_policy` evaluation for the missing field. For example, if `user_acknowledgment_requirements` lists `"deposit_policy"` but no `deposit_policy` field exists in the rules file, the agent skips that acknowledgment entry without error and without evaluating `deposit_policy` against `default_policy`.
 
+**Rationale:** Silent skip prevents venue misconfiguration (e.g., a typo in a policy field name) from cascading into unintended denial of all agent actions. The alternative — failing closed on unresolvable references — would mean a single misspelled field name in a venue's rules file could block every agent interaction, which harms both the venue and its customers. Schema-level validation of reference targets is not feasible because JSON Schema cannot introspect which policy fields are present at runtime.
+
 **Absence behavior:** Subject to `default_policy`.
 
 #### `booking_window`
