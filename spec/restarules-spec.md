@@ -640,7 +640,7 @@ The following example shows a rules file containing only the required fields. Th
 
 ```json
 {
-  "schema_version": "0.2",
+  "schema_version": "0.3",
   "venue_name": "Corner Bistro",
   "venue_url": "https://cornerbistro.example.com",
   "last_updated": "2026-03-01",
@@ -662,7 +662,7 @@ The following example shows a rules file using all available fields, representin
 
 ```json
 {
-  "schema_version": "0.2",
+  "schema_version": "0.3",
   "venue_name": "The Golden Fork",
   "venue_url": "https://goldenfork.example.com",
   "last_updated": "2026-03-10",
@@ -675,13 +675,20 @@ The following example shows a rules file using all available fields, representin
     "phrasing": "You must identify yourself as an AI agent before speaking with staff."
   },
   "allowed_channels": ["phone", "web", "app"],
+  "allowed_channels_by_action": {
+    "check_availability": ["phone", "web", "app"],
+    "create_booking": ["web"],
+    "modify_booking": ["phone"],
+    "cancel_booking": ["phone", "web"]
+  },
   "rate_limits": [
     {
       "action": "booking_request",
       "limit": 3,
       "window_value": 1,
       "window_unit": "hour",
-      "applies_to": ["create_booking", "modify_booking"]
+      "applies_to": ["create_booking", "modify_booking"],
+      "counting_scope": "per_agent"
     }
   ],
   "human_escalation_required": {
@@ -708,6 +715,10 @@ The following example shows a rules file using all available fields, representin
     "deposit_policy",
     "no_show_policy"
   ],
+  "booking_window": {
+    "min_hours_ahead": 2,
+    "max_days_ahead": 90
+  },
   "complaint_endpoint": "https://goldenfork.example.com/agent-complaints",
   "cancellation_policy": {
     "penalty_applies": true,
@@ -723,7 +734,7 @@ The following example shows a rules file using all available fields, representin
 }
 ```
 
-This venue uses a strict default policy — any optional permission field not specified is treated as denied. The venue requires AI disclosure, permits phone, web, and app interactions, limits booking requests to 3 per hour, requires human involvement for reservation modifications and parties over 6, prohibits resale and transfer, requires a non-refundable $50 deposit, and mandates that the agent confirm cancellation, deposit, and no-show policies with the user before proceeding. A $25 cancellation penalty applies within 2 hours of the reservation, and a $100 no-show fee applies after a 15-minute grace period.
+This venue uses a strict default policy — any optional permission field not specified is treated as denied. The venue requires AI disclosure, permits phone, web, and app interactions by default, but overrides channels per action (e.g., bookings are web-only, modifications are phone-only). It limits booking requests to 3 per hour (counted per agent), requires human involvement for reservation modifications and parties over 6, prohibits resale and transfer, requires a non-refundable $50 deposit, and mandates that the agent confirm cancellation, deposit, and no-show policies with the user before proceeding. Bookings must be made at least 2 hours in advance and no more than 90 days ahead. A $25 cancellation penalty applies within 2 hours of the reservation, and a $100 no-show fee applies after a 15-minute grace period.
 
 ## 15. References
 
