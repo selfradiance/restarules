@@ -7602,9 +7602,9 @@
     "sdk/schema.json"(exports, module) {
       module.exports = {
         $schema: "https://json-schema.org/draft/2020-12/schema",
-        $id: "https://restarules.org/schema/v0.3/agent-venue-rules.schema.json",
+        $id: "https://selfradiance.github.io/restarules/schema/agent-venue-rules.schema.json",
         title: "RestaRules Agent Venue Rules",
-        description: "Machine-readable conduct and consent rules for AI agent interactions with a restaurant venue. Schema v0.3.",
+        description: "Machine-readable conduct and consent rules for AI agent interactions with a restaurant venue. Schema v0.3. Unknown top-level fields are permitted for forward compatibility; sub-object schemas remain strict.",
         type: "object",
         required: [
           "schema_version",
@@ -7616,7 +7616,6 @@
           "disclosure_required",
           "allowed_channels"
         ],
-        additionalProperties: false,
         properties: {
           schema_version: {
             type: "string",
@@ -7859,7 +7858,7 @@
               amount: {
                 type: "number",
                 minimum: 0,
-                description: "Deposit amount per person or per booking (context-dependent)."
+                description: "Deposit amount per booking."
               },
               currency: {
                 type: "string",
