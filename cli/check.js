@@ -149,7 +149,12 @@ if (rules.rate_limits) {
   if (args.action !== undefined && args["attempt-count"] !== undefined) {
     const action = args.action;
     const attemptCount = parseInt(args["attempt-count"], 10);
-    const matchingLimits = rules.rate_limits.filter((r) => r.action === action);
+    const matchingLimits = rules.rate_limits.filter((r) => {
+      if (r.applies_to && Array.isArray(r.applies_to)) {
+        return r.applies_to.includes(action);
+      }
+      return r.action === action;
+    });
     for (const limit of matchingLimits) {
       if (attemptCount >= limit.limit) {
         reasons.push(

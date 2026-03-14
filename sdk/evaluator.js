@@ -51,7 +51,12 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
   // 4. Rate limits (with applies_to metadata support)
   if (action !== null && attempts !== null) {
     if (rules.rate_limits) {
-      const match = rules.rate_limits.find((r) => r.action === action);
+      const match = rules.rate_limits.find((r) => {
+        if (r.applies_to && Array.isArray(r.applies_to)) {
+          return r.applies_to.includes(action);
+        }
+        return r.action === action;
+      });
       if (match) {
         result.rateLimit = {
           result: attempts >= match.limit ? "EXCEEDED" : "WITHIN_LIMITS",
@@ -59,6 +64,7 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
           windowValue: match.window_value,
           windowUnit: match.window_unit,
           appliesTo: match.applies_to || null,
+          matchedVia: (match.applies_to && Array.isArray(match.applies_to)) ? "applies_to" : "action",
           countingScope: match.counting_scope || "per_agent",
         };
       } else {

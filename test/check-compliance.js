@@ -64,12 +64,12 @@ try {
   }
 }
 
-// Test 4: ALLOW — rate limit not exceeded (2 attempts, limit is 3)
+// Test 4: ALLOW — rate limit not exceeded (2 attempts, limit is 3; uses applies_to match)
 try {
-  const output = run("--channel phone --disclosed true --action booking_request --attempt-count 2");
+  const output = run("--channel web --disclosed true --action create_booking --attempt-count 2");
   if (output.includes("ALLOW")) {
     console.log(
-      "PASS: Agent within rate limit gets ALLOW"
+      "PASS: Agent within rate limit gets ALLOW (create_booking matches applies_to)"
     );
   } else {
     console.error(
@@ -84,11 +84,11 @@ try {
   process.exit(1);
 }
 
-// Test 5: DENY — rate limit exceeded (3 attempts, limit is 3)
+// Test 5: DENY — rate limit exceeded (3 attempts, limit is 3; uses applies_to match)
 {
-  const r = runSafe(["--channel", "phone", "--disclosed", "true", "--action", "booking_request", "--attempt-count", "3"]);
+  const r = runSafe(["--channel", "web", "--disclosed", "true", "--action", "create_booking", "--attempt-count", "3"]);
   if (r.status === 1 && r.stdout.includes("DENY") && r.stdout.includes("Rate limit exceeded")) {
-    console.log("PASS: Agent exceeding rate limit gets DENY with rate limit reason");
+    console.log("PASS: Agent exceeding rate limit gets DENY with rate limit reason (via applies_to)");
   } else {
     console.error("FAIL: Expected DENY (exit 1) with rate limit reason for exceeded attempt count");
     console.error("status:", r.status, "stdout:", r.stdout);
@@ -508,6 +508,58 @@ try {
   } else {
     console.error("FAIL: Expected exit code 2 for schema validation failure");
     console.error("status:", r32.status, "stdout:", r32.stdout);
+    process.exit(1);
+  }
+}
+
+// Test 33: applies_to match — create_booking matches rate limit via applies_to
+{
+  const appliesToRules = path.join(__dirname, "fixtures", "test-venue-with-applies-to-match.json");
+  const r33 = runSafe(["--channel", "phone", "--disclosed", "true", "--action", "create_booking", "--attempt-count", "6"], appliesToRules);
+  if (r33.status === 1 && r33.stdout.includes("DENY") && r33.stdout.includes("Rate limit exceeded")) {
+    console.log("PASS: applies_to match — create_booking exceeding limit denied via applies_to");
+  } else {
+    console.error("FAIL: Expected DENY for create_booking exceeding rate limit via applies_to");
+    console.error("status:", r33.status, "stdout:", r33.stdout);
+    process.exit(1);
+  }
+}
+
+// Test 34: applies_to mismatch — cancel_booking does not match rate limit with applies_to
+{
+  const appliesToRules = path.join(__dirname, "fixtures", "test-venue-with-applies-to-match.json");
+  const r34 = runSafe(["--channel", "phone", "--disclosed", "true", "--action", "cancel_booking", "--attempt-count", "99"], appliesToRules);
+  if (r34.status === 0 && r34.stdout.includes("ALLOW")) {
+    console.log("PASS: applies_to mismatch — cancel_booking not matched by applies_to scoped rule");
+  } else {
+    console.error("FAIL: Expected ALLOW for cancel_booking (not in applies_to)");
+    console.error("status:", r34.status, "stdout:", r34.stdout);
+    process.exit(1);
+  }
+}
+
+// Test 35: category label does not match when applies_to is present
+{
+  const appliesToRules = path.join(__dirname, "fixtures", "test-venue-with-applies-to-match.json");
+  const r35 = runSafe(["--channel", "phone", "--disclosed", "true", "--action", "booking_request", "--attempt-count", "99"], appliesToRules);
+  if (r35.status === 0 && r35.stdout.includes("ALLOW")) {
+    console.log("PASS: category label booking_request does not match when applies_to is present");
+  } else {
+    console.error("FAIL: Expected ALLOW for booking_request (category label, not in applies_to)");
+    console.error("status:", r35.status, "stdout:", r35.stdout);
+    process.exit(1);
+  }
+}
+
+// Test 36: rule without applies_to still matches on action (backward compat)
+{
+  const appliesToRules = path.join(__dirname, "fixtures", "test-venue-with-applies-to-match.json");
+  const r36 = runSafe(["--channel", "phone", "--disclosed", "true", "--action", "inquiry", "--attempt-count", "11"], appliesToRules);
+  if (r36.status === 1 && r36.stdout.includes("DENY") && r36.stdout.includes("Rate limit exceeded")) {
+    console.log("PASS: rule without applies_to still matches on action field (backward compat)");
+  } else {
+    console.error("FAIL: Expected DENY for inquiry exceeding rate limit via action field");
+    console.error("status:", r36.status, "stdout:", r36.stdout);
     process.exit(1);
   }
 }

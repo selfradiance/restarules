@@ -131,11 +131,12 @@ assert(
   t15.venueMetadata.currency === "USD" && t15.venueMetadata.timezone === "America/New_York"
 );
 
-// Test 16: applies_to metadata surfaced on rate limit result
-const t16 = evaluateCompliance(goldenFork, { action: "booking_request", attempts: 1 });
+// Test 16: applies_to matching — create_booking matches via applies_to
+const t16 = evaluateCompliance(goldenFork, { action: "create_booking", attempts: 1 });
 assert(
-  "rate limit result includes appliesTo metadata",
-  t16.rateLimit.appliesTo !== null && t16.rateLimit.appliesTo.includes("create_booking")
+  "create_booking matches rate limit via applies_to with metadata",
+  t16.rateLimit.result === "WITHIN_LIMITS" && t16.rateLimit.appliesTo !== null &&
+  t16.rateLimit.appliesTo.includes("create_booking") && t16.rateLimit.matchedVia === "applies_to"
 );
 
 // Test 17: counting_scope surfaced on rate limit result
@@ -334,6 +335,35 @@ const t33_inv = evaluateCompliance(bookingWindowRules, {
 assert(
   "invalid currentTime returns INVALID_INPUT",
   t33_inv.inputError && t33_inv.inputError.result === "INVALID_INPUT" && t33_inv.inputError.reason.includes("currentTime")
+);
+
+// Test 34: applies_to — category label does not match when applies_to is present
+const t34 = evaluateCompliance(goldenFork, { action: "booking_request", attempts: 1 });
+assert(
+  "booking_request category label does not match when applies_to is present",
+  t34.rateLimit.result === "DENIED_DEFAULT_POLICY"
+);
+
+// Test 35: applies_to — modify_booking also matches via applies_to
+const t35 = evaluateCompliance(goldenFork, { action: "modify_booking", attempts: 1 });
+assert(
+  "modify_booking matches rate limit via applies_to",
+  t35.rateLimit.result === "WITHIN_LIMITS" && t35.rateLimit.matchedVia === "applies_to"
+);
+
+// Test 36: applies_to — cancel_booking does not match (not in applies_to)
+const t36 = evaluateCompliance(goldenFork, { action: "cancel_booking", attempts: 1 });
+assert(
+  "cancel_booking does not match rate limit (not in applies_to)",
+  t36.rateLimit.result === "DENIED_DEFAULT_POLICY"
+);
+
+// Test 37: backward compat — rule without applies_to matches on action
+const appliesToTestVenue = require("./fixtures/test-venue-with-applies-to-match.json");
+const t37 = evaluateCompliance(appliesToTestVenue, { action: "inquiry", attempts: 3 });
+assert(
+  "inquiry matches rate limit via action field (no applies_to, backward compat)",
+  t37.rateLimit.result === "WITHIN_LIMITS" && t37.rateLimit.matchedVia === "action"
 );
 
 // ============================================================

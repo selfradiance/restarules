@@ -359,6 +359,36 @@ assert.strictEqual(m5.inputError.result, "INVALID_INPUT", "result should be INVA
 console.log("PASS: M5 — Infinity party size returns INVALID_INPUT");
 
 // ============================================================
+// Category P: Rate Limit applies_to Enforcement
+// ============================================================
+
+const appliesToVenue = require("../test/fixtures/test-venue-with-applies-to-match.json");
+
+// P1: action in applies_to matches the rule (create_booking matches applies_to)
+const p1 = sdk.evaluateCompliance(appliesToVenue, { action: "create_booking", attempts: 2 });
+assert.strictEqual(p1.rateLimit.result, "WITHIN_LIMITS", "create_booking should match via applies_to");
+assert.strictEqual(p1.rateLimit.limit, 5, "limit should be 5");
+assert.strictEqual(p1.rateLimit.matchedVia, "applies_to", "should match via applies_to");
+console.log("PASS: P1 — action in applies_to matches the rate limit rule");
+
+// P2: action NOT in applies_to does not match (cancel_booking not in applies_to)
+const p2 = sdk.evaluateCompliance(appliesToVenue, { action: "cancel_booking", attempts: 1 });
+assert.strictEqual(p2.rateLimit.result, "WITHIN_LIMITS_DEFAULT_POLICY", "cancel_booking should not match any rule");
+console.log("PASS: P2 — action not in applies_to does not match the rule");
+
+// P3: category label does not match when applies_to is present (booking_request is category, not in applies_to)
+const p3 = sdk.evaluateCompliance(appliesToVenue, { action: "booking_request", attempts: 1 });
+assert.strictEqual(p3.rateLimit.result, "WITHIN_LIMITS_DEFAULT_POLICY", "booking_request category label should not match when applies_to is present");
+console.log("PASS: P3 — category label does not match when applies_to is present");
+
+// P4: rule WITHOUT applies_to still matches on r.action (backward compat)
+const p4 = sdk.evaluateCompliance(appliesToVenue, { action: "inquiry", attempts: 3 });
+assert.strictEqual(p4.rateLimit.result, "WITHIN_LIMITS", "inquiry should match via action field");
+assert.strictEqual(p4.rateLimit.limit, 10, "limit should be 10");
+assert.strictEqual(p4.rateLimit.matchedVia, "action", "should match via action");
+console.log("PASS: P4 — rule without applies_to still matches on action (backward compat)");
+
+// ============================================================
 // Category N: Schema Sync Verification
 // ============================================================
 
@@ -370,4 +400,4 @@ const sdkSchema = fs.readFileSync(path.join(__dirname, "..", "sdk", "schema.json
 assert.strictEqual(sdkSchema, canonicalSchema, "sdk/schema.json must match schema/agent-venue-rules.schema.json");
 console.log("PASS: N1 — sdk/schema.json matches the canonical schema file");
 
-console.log("\nSDK tests: 38 passed, 0 failed.");
+console.log("\nSDK tests: 42 passed, 0 failed.");
