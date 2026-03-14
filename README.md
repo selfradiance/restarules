@@ -78,7 +78,7 @@ Here the same optional fields are omitted, but `default_policy` is `"allow_if_un
 - `party_size_policy`
 - `deposit_policy`
 - `user_acknowledgment_requirements`
-- `allowed_channels_by_action`
+- `allowed_channels_by_action` (note: when absent, base `allowed_channels` governs all actions — see spec Section 8.2)
 - `booking_window` (with carve-out: absent booking window never blocks, regardless of `default_policy`)
 
 All required fields must always be present. `default_policy` does not override fields that are present, and it does not apply to invalid or malformed values (which should always be treated as an error).
