@@ -7987,9 +7987,48 @@
   // sdk/evaluator.js
   var require_evaluator = __commonJS({
     "sdk/evaluator.js"(exports, module) {
+      function isValidTimezone(tz) {
+        try {
+          Intl.DateTimeFormat(void 0, { timeZone: tz });
+          return true;
+        } catch (e) {
+          return false;
+        }
+      }
+      function hasTimezoneOffset(isoString) {
+        return /(?:Z|[+-]\d{2}(?::?\d{2})?)$/.test(isoString);
+      }
+      function getNowInVenueTimezone(venueTimezone) {
+        const now = /* @__PURE__ */ new Date();
+        const formatter = new Intl.DateTimeFormat("en-US", {
+          timeZone: venueTimezone,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false
+        });
+        const parts = formatter.formatToParts(now);
+        const get = (type) => parts.find((p) => p.type === type).value;
+        return /* @__PURE__ */ new Date(`${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}:${get("second")}`);
+      }
       function evaluateCompliance(rules, { channel = null, partySize = null, action = null, attempts = null, targetTime = null, currentTime = null } = {}) {
         const dp = rules.default_policy;
         const result = {};
+        if (partySize !== null && !Number.isFinite(partySize)) {
+          return { inputError: { result: "INVALID_INPUT", reason: `Invalid partySize: ${partySize}` } };
+        }
+        if (attempts !== null && !Number.isFinite(attempts)) {
+          return { inputError: { result: "INVALID_INPUT", reason: `Invalid attempts: ${attempts}` } };
+        }
+        if (targetTime !== null && isNaN(new Date(targetTime).getTime())) {
+          return { inputError: { result: "INVALID_INPUT", reason: `Invalid targetTime: ${targetTime}` } };
+        }
+        if (currentTime !== null && isNaN(new Date(currentTime).getTime())) {
+          return { inputError: { result: "INVALID_INPUT", reason: `Invalid currentTime: ${currentTime}` } };
+        }
         result.disclosure = {
           required: rules.disclosure_required.enabled,
           phrasing: rules.disclosure_required.phrasing || null
@@ -8011,7 +8050,12 @@
         }
         if (action !== null && attempts !== null) {
           if (rules.rate_limits) {
-            const match = rules.rate_limits.find((r) => r.action === action);
+            const match = rules.rate_limits.find((r) => {
+              if (r.applies_to && Array.isArray(r.applies_to)) {
+                return r.applies_to.includes(action);
+              }
+              return r.action === action;
+            });
             if (match) {
               result.rateLimit = {
                 result: attempts >= match.limit ? "EXCEEDED" : "WITHIN_LIMITS",
@@ -8019,6 +8063,7 @@
                 windowValue: match.window_value,
                 windowUnit: match.window_unit,
                 appliesTo: match.applies_to || null,
+                matchedVia: match.applies_to && Array.isArray(match.applies_to) ? "applies_to" : "action",
                 countingScope: match.counting_scope || "per_agent"
               };
             } else {
@@ -8037,11 +8082,29 @@
         result.escalationConditions = rules.human_escalation_required ? rules.human_escalation_required.conditions : [];
         if (partySize !== null) {
           if (rules.party_size_policy) {
-            const autoMax = rules.party_size_policy.auto_book_max;
-            result.partySize = {
+            const psp = rules.party_size_policy;
+            const autoMax = psp.auto_book_max;
+            const partySizeResult = {
               result: partySize > autoMax ? "ESCALATE_TO_HUMAN" : "ALLOWED",
               autoMax
             };
+            if (psp.human_review_above !== void 0) {
+              partySizeResult.humanReviewAbove = psp.human_review_above;
+              if (partySize > psp.human_review_above) {
+                partySizeResult.humanReviewRecommended = true;
+              }
+            }
+            if (psp.large_party_channels && partySize > autoMax) {
+              partySizeResult.largePartyChannels = psp.large_party_channels;
+              if (channel !== null && !psp.large_party_channels.includes(channel)) {
+                partySizeResult.channelWarning = {
+                  message: "Current channel not in venue's large_party_channels list",
+                  currentChannel: channel,
+                  requiredChannels: psp.large_party_channels
+                };
+              }
+            }
+            result.partySize = partySizeResult;
           } else {
             result.partySize = {
               result: dp === "allow_if_unspecified" ? "ALLOWED" : "DENIED_DEFAULT_POLICY",
@@ -8137,8 +8200,8 @@
         }
         if (rules.booking_window) {
           const bw = rules.booking_window;
-          const hasTimezone = !!rules.venue_timezone;
-          const canEvaluate = action === "create_booking" && targetTime !== null && hasTimezone;
+          const hasTz = !!rules.venue_timezone;
+          const validTz = hasTz && isValidTimezone(rules.venue_timezone);
           const isContradictory = bw.min_hours_ahead !== void 0 && bw.max_days_ahead !== void 0 && bw.min_hours_ahead >= bw.max_days_ahead * 24;
           if (isContradictory) {
             result.bookingWindow = {
@@ -8149,8 +8212,44 @@
               minHoursAhead: bw.min_hours_ahead,
               maxDaysAhead: bw.max_days_ahead
             };
-          } else if (canEvaluate) {
-            const now = currentTime ? new Date(currentTime) : /* @__PURE__ */ new Date();
+          } else if (!hasTz) {
+            result.bookingWindow = {
+              defined: true,
+              enforced: false,
+              result: "NOT_EVALUATED",
+              reason: "venue_timezone absent \u2014 informational only",
+              minHoursAhead: bw.min_hours_ahead !== void 0 ? bw.min_hours_ahead : null,
+              maxDaysAhead: bw.max_days_ahead !== void 0 ? bw.max_days_ahead : null
+            };
+          } else if (!validTz) {
+            result.bookingWindow = {
+              defined: true,
+              enforced: false,
+              result: "NOT_EVALUATED",
+              reason: `invalid_venue_timezone: "${rules.venue_timezone}" is not a recognized IANA timezone`,
+              minHoursAhead: bw.min_hours_ahead !== void 0 ? bw.min_hours_ahead : null,
+              maxDaysAhead: bw.max_days_ahead !== void 0 ? bw.max_days_ahead : null
+            };
+          } else if (action !== "create_booking" || targetTime === null) {
+            result.bookingWindow = {
+              defined: true,
+              enforced: false,
+              result: "NOT_EVALUATED",
+              reason: null,
+              minHoursAhead: bw.min_hours_ahead !== void 0 ? bw.min_hours_ahead : null,
+              maxDaysAhead: bw.max_days_ahead !== void 0 ? bw.max_days_ahead : null
+            };
+          } else if (!hasTimezoneOffset(targetTime)) {
+            result.bookingWindow = {
+              defined: true,
+              enforced: false,
+              result: "NOT_EVALUATED",
+              reason: "target_time_missing_timezone: targetTime must include a timezone offset (Z or +/-HH:MM)",
+              minHoursAhead: bw.min_hours_ahead !== void 0 ? bw.min_hours_ahead : null,
+              maxDaysAhead: bw.max_days_ahead !== void 0 ? bw.max_days_ahead : null
+            };
+          } else {
+            const now = currentTime ? new Date(currentTime) : getNowInVenueTimezone(rules.venue_timezone);
             const target = new Date(targetTime);
             const diffMs = target.getTime() - now.getTime();
             const diffHours = diffMs / (1e3 * 60 * 60);
@@ -8172,22 +8271,52 @@
               minHoursAhead: bw.min_hours_ahead !== void 0 ? bw.min_hours_ahead : null,
               maxDaysAhead: bw.max_days_ahead !== void 0 ? bw.max_days_ahead : null
             };
-          } else {
-            result.bookingWindow = {
-              defined: true,
-              enforced: false,
-              result: "NOT_EVALUATED",
-              reason: !hasTimezone ? "venue_timezone absent \u2014 informational only" : null,
-              minHoursAhead: bw.min_hours_ahead !== void 0 ? bw.min_hours_ahead : null,
-              maxDaysAhead: bw.max_days_ahead !== void 0 ? bw.max_days_ahead : null
-            };
           }
         } else {
           result.bookingWindow = { defined: false };
         }
         return result;
       }
-      module.exports = { evaluateCompliance };
+      function getAggregateVerdict(report) {
+        if (report.inputError) {
+          return { verdict: "INVALID", reasons: [report.inputError.reason] };
+        }
+        const reasons = [];
+        if (report.channel && report.channel.result === "DENIED") {
+          reasons.push(`Channel not in allowed_channels [${report.channel.allowedChannels.join(", ")}]`);
+        }
+        if (report.rateLimit) {
+          if (report.rateLimit.result === "EXCEEDED") {
+            reasons.push(`Rate limit exceeded: ${report.rateLimit.limit} per ${report.rateLimit.windowValue} ${report.rateLimit.windowUnit}`);
+          } else if (report.rateLimit.result === "DENIED_DEFAULT_POLICY") {
+            reasons.push("Rate limit denied by default policy");
+          }
+        }
+        if (report.partySize) {
+          if (report.partySize.result === "ESCALATE_TO_HUMAN") {
+            reasons.push(`Party size exceeds auto_book_max of ${report.partySize.autoMax} \u2014 escalation required`);
+          } else if (report.partySize.result === "DENIED_DEFAULT_POLICY") {
+            reasons.push("Party size denied by default policy");
+          }
+        }
+        if (report.thirdParty && !report.thirdParty.defined && report.thirdParty.defaultPolicyResult === "DENIED_DEFAULT_POLICY") {
+          reasons.push("Third-party restrictions denied by default policy");
+        }
+        if (report.depositPolicy && !report.depositPolicy.defined && report.depositPolicy.defaultPolicyResult === "DENIED_DEFAULT_POLICY") {
+          reasons.push("Deposit policy denied by default policy");
+        }
+        if (report.userAcknowledgmentRequirements && !report.userAcknowledgmentRequirements.defined && report.userAcknowledgmentRequirements.defaultPolicyResult === "DENIED_DEFAULT_POLICY") {
+          reasons.push("User acknowledgment requirements denied by default policy");
+        }
+        if (report.bookingWindow && report.bookingWindow.result === "DENIED") {
+          reasons.push(report.bookingWindow.reason || "Booking window constraint violated");
+        }
+        if (reasons.length > 0) {
+          return { verdict: "DENY", reasons };
+        }
+        return { verdict: "ALLOW", reasons: [] };
+      }
+      module.exports = { evaluateCompliance, getAggregateVerdict };
     }
   });
 
@@ -8195,10 +8324,11 @@
   var require_sdk = __commonJS({
     "sdk/index.js"(exports, module) {
       var { validateRules } = require_validator();
-      var { evaluateCompliance } = require_evaluator();
+      var { evaluateCompliance, getAggregateVerdict } = require_evaluator();
       module.exports = {
         validateRules,
-        evaluateCompliance
+        evaluateCompliance,
+        getAggregateVerdict
       };
     }
   });

@@ -28,4 +28,17 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - run: npm audit --omit=dev
+      - run: npm audit --audit-level=moderate
+
+  demo-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Build demo bundle
+        run: npm run build:demo
+      - name: Check demo bundle is up to date
+        run: git diff --exit-code demo/voice/bundle.js || (echo "ERROR: demo bundle is out of date — run npm run build:demo and commit" && exit 1)
