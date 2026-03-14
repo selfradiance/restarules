@@ -41,4 +41,4 @@ jobs:
       - name: Build demo bundle
         run: npm run build:demo
       - name: Check demo bundle is up to date
-        run: git diff --exit-code demo/voice/bundle.js || (echo "ERROR: demo bundle is out of date — run npm run build:demo and commit" && exit 1)
+        run: git diff --exit-code demo/voice/bundle.js || (echo "ERROR: demo bundle is out of date -- run npm run build:demo and commit" && exit 1)
