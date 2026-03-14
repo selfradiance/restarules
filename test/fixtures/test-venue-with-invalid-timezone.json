@@ -1,0 +1,15 @@
+{
+  "schema_version": "0.3",
+  "venue_name": "Invalid TZ Bistro",
+  "venue_url": "https://invalid-tz-bistro.example.com",
+  "last_updated": "2026-03-14",
+  "effective_at": "2026-03-14",
+  "default_policy": "deny_if_unspecified",
+  "disclosure_required": { "enabled": false },
+  "allowed_channels": ["phone", "web"],
+  "venue_timezone": "Not/A/Timezone",
+  "booking_window": {
+    "min_hours_ahead": 2,
+    "max_days_ahead": 30
+  }
+}

@@ -564,4 +564,30 @@ try {
   }
 }
 
+// Test 37: invalid venue_timezone — booking window not enforced, warning output
+{
+  const invalidTzRules = path.join(__dirname, "fixtures", "test-venue-with-invalid-timezone.json");
+  const r37 = runSafe(["--channel", "phone", "--disclosed", "true", "--action", "create_booking", "--target-time", "2026-04-01T18:00:00Z"], invalidTzRules);
+  if (r37.stdout.includes("invalid_venue_timezone") && !r37.stdout.includes("booking_window.min_hours_ahead")) {
+    console.log("PASS: invalid venue_timezone — booking window warning, no enforcement");
+  } else {
+    console.error("FAIL: Expected invalid_venue_timezone warning and no booking window enforcement");
+    console.error("stdout:", r37.stdout);
+    process.exit(1);
+  }
+}
+
+// Test 38: targetTime without timezone offset — booking window not enforced, warning output
+{
+  const bookingWindowRules = path.join(__dirname, "fixtures", "test-venue-with-booking-window.json");
+  const r38 = runSafe(["--channel", "phone", "--disclosed", "true", "--action", "create_booking", "--target-time", "2026-04-01T18:00:00"], bookingWindowRules);
+  if (r38.stdout.includes("target_time_missing_timezone") && !r38.stdout.includes("booking_window.min_hours_ahead")) {
+    console.log("PASS: targetTime without timezone offset — booking window warning, no enforcement");
+  } else {
+    console.error("FAIL: Expected target_time_missing_timezone warning and no booking window enforcement");
+    console.error("stdout:", r38.stdout);
+    process.exit(1);
+  }
+}
+
 console.log("\nAll compliance checker tests passed.");

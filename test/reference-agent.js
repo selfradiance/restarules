@@ -366,6 +366,31 @@ assert(
   t37.rateLimit.result === "WITHIN_LIMITS" && t37.rateLimit.matchedVia === "action"
 );
 
+// Test 38: invalid venue_timezone returns NOT_EVALUATED with reason
+const invalidTzVenue = require("./fixtures/test-venue-with-invalid-timezone.json");
+const t38 = evaluateCompliance(invalidTzVenue, {
+  action: "create_booking",
+  targetTime: "2026-04-01T18:00:00Z",
+  currentTime: "2026-03-14T12:00:00Z",
+});
+assert(
+  "invalid venue_timezone returns NOT_EVALUATED with invalid_venue_timezone reason",
+  t38.bookingWindow.defined === true && t38.bookingWindow.enforced === false &&
+  t38.bookingWindow.result === "NOT_EVALUATED" && t38.bookingWindow.reason.includes("invalid_venue_timezone")
+);
+
+// Test 39: targetTime without timezone offset returns NOT_EVALUATED
+const t39 = evaluateCompliance(bookingWindowRules, {
+  action: "create_booking",
+  targetTime: "2026-04-01T18:00:00",
+  currentTime: "2026-03-14T12:00:00Z",
+});
+assert(
+  "targetTime without timezone offset returns NOT_EVALUATED",
+  t39.bookingWindow.defined === true && t39.bookingWindow.enforced === false &&
+  t39.bookingWindow.result === "NOT_EVALUATED" && t39.bookingWindow.reason.includes("target_time_missing_timezone")
+);
+
 // ============================================================
 // Category O: Fetch Hardening (agent.js CLI tests)
 // ============================================================

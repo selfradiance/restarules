@@ -6,6 +6,45 @@
  * No I/O, no side effects — pure function.
  */
 
+/**
+ * Validate that a timezone string is a recognized IANA timezone.
+ * Uses Intl.DateTimeFormat which is available in Node.js 13+ and all modern browsers.
+ */
+function isValidTimezone(tz) {
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Check whether an ISO 8601 datetime string includes a timezone offset (Z, +HH:MM, -HH:MM, etc.).
+ * Returns false for naive datetimes like "2026-04-01T18:00:00".
+ */
+function hasTimezoneOffset(isoString) {
+  return /(?:Z|[+-]\d{2}(?::?\d{2})?)$/.test(isoString);
+}
+
+/**
+ * Get the current time expressed in the venue's timezone.
+ * Returns a Date object representing "now" as read from the venue's wall clock.
+ * Uses Intl.DateTimeFormat to convert — no external dependencies needed.
+ */
+function getNowInVenueTimezone(venueTimezone) {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: venueTimezone,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false
+  });
+  const parts = formatter.formatToParts(now);
+  const get = (type) => parts.find(p => p.type === type).value;
+  return new Date(`${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}`);
+}
+
 function evaluateCompliance(rules, { channel = null, partySize = null, action = null, attempts = null, targetTime = null, currentTime = null } = {}) {
   const dp = rules.default_policy;
   const result = {};
@@ -207,8 +246,8 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
   // 11. Booking window (applies to create_booking only; absence never blocks)
   if (rules.booking_window) {
     const bw = rules.booking_window;
-    const hasTimezone = !!rules.venue_timezone;
-    const canEvaluate = action === "create_booking" && targetTime !== null && hasTimezone;
+    const hasTz = !!rules.venue_timezone;
+    const validTz = hasTz && isValidTimezone(rules.venue_timezone);
 
     // Check for contradictory window (min_hours_ahead >= max_days_ahead * 24)
     const isContradictory = bw.min_hours_ahead !== undefined && bw.max_days_ahead !== undefined &&
@@ -223,8 +262,49 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
         minHoursAhead: bw.min_hours_ahead,
         maxDaysAhead: bw.max_days_ahead,
       };
-    } else if (canEvaluate) {
-      const now = currentTime ? new Date(currentTime) : new Date();
+    } else if (!hasTz) {
+      // venue_timezone absent — informational only
+      result.bookingWindow = {
+        defined: true,
+        enforced: false,
+        result: "NOT_EVALUATED",
+        reason: "venue_timezone absent — informational only",
+        minHoursAhead: bw.min_hours_ahead !== undefined ? bw.min_hours_ahead : null,
+        maxDaysAhead: bw.max_days_ahead !== undefined ? bw.max_days_ahead : null,
+      };
+    } else if (!validTz) {
+      // venue_timezone present but not a valid IANA timezone
+      result.bookingWindow = {
+        defined: true,
+        enforced: false,
+        result: "NOT_EVALUATED",
+        reason: `invalid_venue_timezone: "${rules.venue_timezone}" is not a recognized IANA timezone`,
+        minHoursAhead: bw.min_hours_ahead !== undefined ? bw.min_hours_ahead : null,
+        maxDaysAhead: bw.max_days_ahead !== undefined ? bw.max_days_ahead : null,
+      };
+    } else if (action !== "create_booking" || targetTime === null) {
+      // Informational only — either not create_booking or no target_time
+      result.bookingWindow = {
+        defined: true,
+        enforced: false,
+        result: "NOT_EVALUATED",
+        reason: null,
+        minHoursAhead: bw.min_hours_ahead !== undefined ? bw.min_hours_ahead : null,
+        maxDaysAhead: bw.max_days_ahead !== undefined ? bw.max_days_ahead : null,
+      };
+    } else if (!hasTimezoneOffset(targetTime)) {
+      // targetTime missing timezone offset — cannot safely compare
+      result.bookingWindow = {
+        defined: true,
+        enforced: false,
+        result: "NOT_EVALUATED",
+        reason: "target_time_missing_timezone: targetTime must include a timezone offset (Z or +/-HH:MM)",
+        minHoursAhead: bw.min_hours_ahead !== undefined ? bw.min_hours_ahead : null,
+        maxDaysAhead: bw.max_days_ahead !== undefined ? bw.max_days_ahead : null,
+      };
+    } else {
+      // All preconditions met — evaluate booking window with timezone-correct time math
+      const now = currentTime ? new Date(currentTime) : getNowInVenueTimezone(rules.venue_timezone);
       const target = new Date(targetTime);
       const diffMs = target.getTime() - now.getTime();
       const diffHours = diffMs / (1000 * 60 * 60);
@@ -245,16 +325,6 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
         enforced: true,
         result: windowResult,
         reason,
-        minHoursAhead: bw.min_hours_ahead !== undefined ? bw.min_hours_ahead : null,
-        maxDaysAhead: bw.max_days_ahead !== undefined ? bw.max_days_ahead : null,
-      };
-    } else {
-      // Informational only — either not create_booking, no target_time, or no venue_timezone
-      result.bookingWindow = {
-        defined: true,
-        enforced: false,
-        result: "NOT_EVALUATED",
-        reason: !hasTimezone ? "venue_timezone absent — informational only" : null,
         minHoursAhead: bw.min_hours_ahead !== undefined ? bw.min_hours_ahead : null,
         maxDaysAhead: bw.max_days_ahead !== undefined ? bw.max_days_ahead : null,
       };

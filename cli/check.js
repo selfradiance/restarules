@@ -45,6 +45,19 @@ function parseArgs(argv) {
   return args;
 }
 
+function isValidTimezone(tz) {
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function hasTimezoneOffset(isoString) {
+  return /(?:Z|[+-]\d{2}(?::?\d{2})?)$/.test(isoString);
+}
+
 const args = parseArgs(process.argv);
 
 if (!args.rules || !args.channel || !args.disclosed) {
@@ -246,7 +259,16 @@ if (rules.booking_window && args["target-time"] && args.action === "create_booki
   if (isContradictory) {
     // Contradictory window — treat as non-actionable, warn instead of deny
     console.log(`  booking_window_warning: Contradictory booking window: min_hours_ahead (${bw.min_hours_ahead}) exceeds max_days_ahead (${bw.max_days_ahead}) converted to hours (${bw.max_days_ahead * 24}). Treating as non-actionable.`);
-  } else if (rules.venue_timezone) {
+  } else if (!rules.venue_timezone) {
+    // venue_timezone absent — booking_window is informational only, no denial
+  } else if (!isValidTimezone(rules.venue_timezone)) {
+    // venue_timezone present but invalid — warn, do not enforce
+    console.log(`  booking_window_warning: invalid_venue_timezone: "${rules.venue_timezone}" is not a recognized IANA timezone. Treating booking_window as informational only.`);
+  } else if (!hasTimezoneOffset(args["target-time"])) {
+    // targetTime missing timezone offset — cannot safely compare
+    console.log(`  booking_window_warning: target_time_missing_timezone: --target-time must include a timezone offset (Z or +/-HH:MM). Treating booking_window as informational only.`);
+  } else {
+    // All preconditions met — evaluate with timezone-correct time math
     const now = new Date();
     const target = new Date(args["target-time"]);
     const diffMs = target.getTime() - now.getTime();
@@ -263,7 +285,6 @@ if (rules.booking_window && args["target-time"] && args.action === "create_booki
       );
     }
   }
-  // If venue_timezone is absent, booking_window is informational only — no denial
 }
 
 // cancellation_policy, no_show_policy, and complaint_endpoint are informational fields.

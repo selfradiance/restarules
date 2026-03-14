@@ -389,6 +389,58 @@ assert.strictEqual(p4.rateLimit.matchedVia, "action", "should match via action")
 console.log("PASS: P4 — rule without applies_to still matches on action (backward compat)");
 
 // ============================================================
+// Category Q: Timezone-Correct Booking Window
+// ============================================================
+
+// Q1: Valid timezone with timezone-qualified times evaluates correctly
+const q1 = sdk.evaluateCompliance(bookingWindowVenue, {
+  action: "create_booking",
+  targetTime: "2026-03-13T17:00:00-05:00",
+  currentTime: "2026-03-13T12:00:00-05:00",
+});
+assert.strictEqual(q1.bookingWindow.defined, true, "booking_window should be defined");
+assert.strictEqual(q1.bookingWindow.enforced, true, "booking_window should be enforced");
+assert.strictEqual(q1.bookingWindow.result, "ALLOWED", "5 hours ahead should be within window");
+console.log("PASS: Q1 — valid timezone with timezone-qualified times evaluates correctly");
+
+// Q2: Invalid timezone string returns NOT_EVALUATED with invalid_venue_timezone reason
+const invalidTzVenue = require("../test/fixtures/test-venue-with-invalid-timezone.json");
+const q2 = sdk.evaluateCompliance(invalidTzVenue, {
+  action: "create_booking",
+  targetTime: "2026-04-01T18:00:00Z",
+  currentTime: "2026-03-14T12:00:00Z",
+});
+assert.strictEqual(q2.bookingWindow.defined, true, "booking_window should be defined");
+assert.strictEqual(q2.bookingWindow.enforced, false, "should not be enforced with invalid timezone");
+assert.strictEqual(q2.bookingWindow.result, "NOT_EVALUATED", "should be NOT_EVALUATED");
+assert.ok(q2.bookingWindow.reason.includes("invalid_venue_timezone"), "reason should mention invalid_venue_timezone");
+assert.ok(q2.bookingWindow.reason.includes("Not/A/Timezone"), "reason should include the bad timezone value");
+console.log("PASS: Q2 — invalid timezone string returns NOT_EVALUATED with invalid_venue_timezone reason");
+
+// Q3: targetTime without timezone offset returns NOT_EVALUATED
+const q3 = sdk.evaluateCompliance(bookingWindowVenue, {
+  action: "create_booking",
+  targetTime: "2026-04-01T18:00:00",
+  currentTime: "2026-03-14T12:00:00Z",
+});
+assert.strictEqual(q3.bookingWindow.defined, true, "booking_window should be defined");
+assert.strictEqual(q3.bookingWindow.enforced, false, "should not be enforced without target timezone");
+assert.strictEqual(q3.bookingWindow.result, "NOT_EVALUATED", "should be NOT_EVALUATED");
+assert.ok(q3.bookingWindow.reason.includes("target_time_missing_timezone"), "reason should mention target_time_missing_timezone");
+console.log("PASS: Q3 — targetTime without timezone offset returns NOT_EVALUATED");
+
+// Q4: No currentTime provided with valid venue_timezone — exercises getNowInVenueTimezone path
+const q4 = sdk.evaluateCompliance(bookingWindowVenue, {
+  action: "create_booking",
+  targetTime: "2099-06-01T18:00:00Z",
+});
+assert.strictEqual(q4.bookingWindow.defined, true, "booking_window should be defined");
+assert.strictEqual(q4.bookingWindow.enforced, true, "should be enforced");
+// Far future target should be either ALLOWED or DENIED (by max_days_ahead), but should not crash
+assert.ok(q4.bookingWindow.result === "ALLOWED" || q4.bookingWindow.result === "DENIED", "should produce a result without error");
+console.log("PASS: Q4 — no currentTime provided with valid venue_timezone exercises timezone path without error");
+
+// ============================================================
 // Category N: Schema Sync Verification
 // ============================================================
 
@@ -400,4 +452,4 @@ const sdkSchema = fs.readFileSync(path.join(__dirname, "..", "sdk", "schema.json
 assert.strictEqual(sdkSchema, canonicalSchema, "sdk/schema.json must match schema/agent-venue-rules.schema.json");
 console.log("PASS: N1 — sdk/schema.json matches the canonical schema file");
 
-console.log("\nSDK tests: 42 passed, 0 failed.");
+console.log("\nSDK tests: 47 passed, 0 failed.");
