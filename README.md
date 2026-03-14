@@ -388,18 +388,14 @@ RestaRules is in active development. Current version: **v0.3**.
 
 ## SDK
 
-The `sdk/` directory contains `restarules-sdk`, an npm package that lets developers validate RestaRules files and evaluate agent compliance programmatically. It exports two functions: `validateRules` for JSON Schema validation and `evaluateCompliance` for running the full decision procedure against a proposed action. See [sdk/README.md](sdk/README.md) for full API documentation and usage examples. The SDK is not yet published to npm. To use it locally:
+The `sdk/` directory contains `restarules-sdk`, an npm package that lets developers validate RestaRules files and evaluate agent compliance programmatically. It exports two functions: `validateRules` for JSON Schema validation and `evaluateCompliance` for running the full decision procedure against a proposed action. See [sdk/README.md](sdk/README.md) for full API documentation and usage examples.
 
 ```bash
-git clone https://github.com/selfradiance/restarules.git
-cd restarules/sdk
-npm install
+npm install restarules-sdk
 ```
 
-Then require it in your project:
-
 ```javascript
-const { validateRules, evaluateCompliance } = require('./sdk');
+const { validateRules, evaluateCompliance } = require('restarules-sdk');
 ```
 
 ## Agent Compliance Demo

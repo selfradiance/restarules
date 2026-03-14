@@ -8,18 +8,14 @@ RestaRules is an open standard that lets restaurants publish machine-readable co
 
 ## Installation
 
-The SDK is not yet published to npm. To use it locally:
-
 ```bash
-git clone https://github.com/selfradiance/restarules.git
-cd restarules/sdk
-npm install
+npm install restarules-sdk
 ```
 
-Then reference it from your project:
+Then use it in your project:
 
 ```javascript
-const { validateRules, evaluateCompliance } = require('./path/to/restarules/sdk');
+const { validateRules, evaluateCompliance } = require('restarules-sdk');
 ```
 
 ## Quick Start
