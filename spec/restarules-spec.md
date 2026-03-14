@@ -180,6 +180,8 @@ Future versions of this specification may introduce additional fields. Agents MU
 
 Venues MUST NOT rely on unknown fields being processed by agents. Any field that governs agent behavior must be defined in this specification.
 
+The JSON Schema enforces strict validation on defined sub-objects but permits unknown top-level fields to support forward compatibility.
+
 ## 8. Field Semantics
 
 ### 8.1 Metadata Fields

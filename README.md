@@ -118,6 +118,8 @@ The schema lives in `schema/`:
 
 The project includes two example venues: **The Golden Fork** (`schema/agent-venue-rules-example.json`) is a comprehensive reference example showing all available fields. **Bella Notte Trattoria** (`.well-known/agent-venue-rules.json`) is the live demo — a near-complete v0.3 file served via GitHub Pages at the `/.well-known/` URL.
 
+The schema permits unknown top-level fields for forward compatibility — agents encountering fields from a newer schema version should ignore them rather than rejecting the file.
+
 ### Required Fields
 
 | Field | Description |
