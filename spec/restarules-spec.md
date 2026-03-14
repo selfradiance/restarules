@@ -319,10 +319,21 @@ Channel definitions: `"phone"` refers to voice calls to the venue. `"web"` refer
 - `window_value` (integer): The size of the time window
 - `window_unit` (string): The unit of the time window (e.g., `"hour"`, `"day"`)
 - `applies_to` (array, optional): Specific action types this rule applies to, referencing the shared `action_type` enum (`"check_availability"`, `"create_booking"`, `"modify_booking"`, `"cancel_booking"`)
+- `counting_scope` (string, optional): Declares the scope for counting rate limit attempts against this rule. Valid values: `"per_agent"`, `"per_user"`, `"per_session"`. If absent, agents MUST treat the rule as `"per_agent"`.
 
 The `action` field is a venue-defined label that identifies the conceptual category of the rate limit rule (e.g., `"booking_request"`). The `applies_to` field, when present, is the authoritative field for action-type matching — it restricts the rule to specific action types from the shared `action_type` vocabulary. If `applies_to` is absent, the agent MAY treat the rule as applying to all supported action types. The `action` field is always required; `applies_to` is an optional refinement.
 
-**Agent behavior:** Agents MUST track their own action counts and respect the limits defined. If an `applies_to` array is present, the rule applies only to the listed action types. If `applies_to` is absent, the rule applies to all actions matching the `action` field. This specification does not define how venues identify individual agents for rate limit counting purposes. Agents SHOULD enforce rate limits using the identifier they present to the venue. If no identifier is presented, agents SHOULD enforce limits per session or per user request context. Formal identity semantics are deferred to a future version of this specification.
+The `counting_scope` field declares how the venue intends rate limit attempts to be counted:
+
+- `"per_agent"`: Attempts are counted per the stable declared agent identity presented to the venue. This is the default when `counting_scope` is absent.
+- `"per_user"`: Attempts are counted per the end user the agent is acting on behalf of.
+- `"per_session"`: Attempts are counted per interaction session.
+
+The value `"per_ip"` is explicitly excluded. IP-based counting is a transport-layer concern — NAT, proxies, and cloud infrastructure make IP addresses unreliable for agent or user identity. Rate limit counting scope is a conduct-layer declaration.
+
+If a venue has no mechanism for identifying agents or users at the declared scope, the venue MAY fall back to request-source heuristics (e.g., IP address, API key). This fallback is an implementation detail and is not specified by this document.
+
+**Agent behavior:** Agents MUST track their own action counts and respect the limits defined. If an `applies_to` array is present, the rule applies only to the listed action types. If `applies_to` is absent, the rule applies to all actions matching the `action` field. When `counting_scope` is absent from a rate limit rule, agents MUST treat the rule as `"per_agent"`. Agents SHOULD enforce rate limits using the identifier appropriate to the declared scope — their own agent identity for `"per_agent"`, the end user's identity for `"per_user"`, or the current session identifier for `"per_session"`.
 
 **Absence behavior:** Subject to `default_policy`.
 
@@ -461,7 +472,7 @@ This section defines the algorithm an agent MUST follow when processing a RestaR
 
 **Step 3: Check `allowed_channels`.** The agent MUST verify that its intended communication channel is listed in the `allowed_channels` array. If the channel is not listed, the agent MUST deny the action.
 
-**Step 4: Check `rate_limits`.** If `rate_limits` is present, the agent MUST verify that the intended action does not exceed any applicable rate limit. If a limit would be exceeded, the agent MUST deny the action. If `rate_limits` is absent, apply `default_policy`.
+**Step 4: Check `rate_limits`.** If `rate_limits` is present, the agent MUST verify that the intended action does not exceed any applicable rate limit. The counting scope for each rule is declared by the `counting_scope` field; if absent, the agent MUST count attempts as `"per_agent"` (see Section 8.2). If a limit would be exceeded, the agent MUST deny the action. If `rate_limits` is absent, apply `default_policy`.
 
 **Step 5: Check `human_escalation_required`.** If `human_escalation_required` is present and the current interaction matches any listed condition, the agent MUST escalate to a human and deny the automated action. If absent, apply `default_policy`.
 
