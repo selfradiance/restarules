@@ -1,0 +1,20 @@
+{
+  "schema_version": "0.2",
+  "venue_name": "Ack Skip Test Venue",
+  "venue_url": "https://ack-skip-test.example.com",
+  "last_updated": "2026-03-13",
+  "effective_at": "2026-03-13",
+  "default_policy": "allow_if_unspecified",
+  "disclosure_required": {
+    "enabled": true,
+    "phrasing": "I am an AI assistant."
+  },
+  "allowed_channels": ["phone", "web"],
+  "user_acknowledgment_requirements": ["deposit_policy", "cancellation_policy"],
+  "cancellation_policy": {
+    "penalty_applies": true,
+    "window_minutes": 60,
+    "penalty_amount": 25,
+    "currency": "USD"
+  }
+}

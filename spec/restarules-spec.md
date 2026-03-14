@@ -429,7 +429,9 @@ If a venue has no mechanism for identifying agents or users at the declared scop
 
 **Meaning:** A list of policy names that the agent must confirm with the user before proceeding. Each string MUST exactly match the JSON key of the corresponding field in the rules file (e.g., `"cancellation_policy"`, `"deposit_policy"`, `"no_show_policy"`).
 
-**Agent behavior:** Before completing an action, the agent MUST present each listed policy to the user and obtain acknowledgment. The agent MUST NOT proceed until the user has acknowledged all listed policies. If a referenced policy name does not correspond to a field present in the rules file, the agent MUST inform the user that acknowledgment is required for a policy whose details were not provided in the rules file. The agent MAY continue only if the user explicitly acknowledges that the policy details are unavailable.
+**Agent behavior:** Before completing an action, the agent MUST present each listed policy to the user and obtain acknowledgment. The agent MUST NOT proceed until the user has acknowledged all listed policies that are present in the rules file.
+
+When `user_acknowledgment_requirements` references a policy field that is not present in the rules file, agents MUST silently ignore that entry. The absence of a referenced policy field MUST NOT cause an error, and MUST NOT trigger a denial under `default_policy` for the absent policy itself. The acknowledgment skip is clean — it does not cascade into a `default_policy` evaluation for the missing field. For example, if `user_acknowledgment_requirements` lists `"deposit_policy"` but no `deposit_policy` field exists in the rules file, the agent skips that acknowledgment entry without error and without evaluating `deposit_policy` against `default_policy`.
 
 **Absence behavior:** Subject to `default_policy`.
 

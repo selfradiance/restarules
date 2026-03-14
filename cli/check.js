@@ -278,7 +278,21 @@ if (rules.deposit_policy && rules.deposit_policy.required) {
 }
 
 if (rules.user_acknowledgment_requirements && rules.user_acknowledgment_requirements.length > 0) {
-  console.log(`user_acknowledgment_required: ${rules.user_acknowledgment_requirements.join(", ")}`);
+  const activePolicies = [];
+  const skippedPolicies = [];
+  for (const policyName of rules.user_acknowledgment_requirements) {
+    if (rules[policyName] !== undefined) {
+      activePolicies.push(policyName);
+    } else {
+      skippedPolicies.push(policyName);
+    }
+  }
+  if (activePolicies.length > 0) {
+    console.log(`user_acknowledgment_required: ${activePolicies.join(", ")}`);
+  }
+  for (const skipped of skippedPolicies) {
+    console.log(`user_acknowledgment_skipped: ${skipped} (referenced but not defined in rules file)`);
+  }
 }
 
 if (rules.cancellation_policy) {

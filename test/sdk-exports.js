@@ -271,4 +271,30 @@ assert.strictEqual(j6.bookingWindow.enforced, false, "should not be enforced for
 assert.strictEqual(j6.bookingWindow.result, "NOT_EVALUATED", "should be NOT_EVALUATED for non-create_booking");
 console.log("PASS: J6 — non-create_booking action skips booking window evaluation");
 
-console.log("\nSDK tests: 29 passed, 0 failed.");
+// ============================================================
+// Category K: Acknowledgment Semantics (absent policy references)
+// ============================================================
+
+// K1: Absent policy reference is skipped gracefully
+const ackSkipRules = JSON.parse(JSON.stringify(minimalVenue));
+ackSkipRules.user_acknowledgment_requirements = ["deposit_policy"];
+// No deposit_policy field exists in minimalVenue
+const k1 = sdk.evaluateCompliance(ackSkipRules, { channel: "phone" });
+assert.strictEqual(k1.userAcknowledgmentRequirements.defined, true, "ack should be defined");
+assert.deepStrictEqual(k1.userAcknowledgmentRequirements.policies, [], "absent deposit_policy should be skipped");
+assert.deepStrictEqual(k1.userAcknowledgmentRequirements.skippedPolicies, ["deposit_policy"], "skipped entry should be reported");
+console.log("PASS: K1 — absent policy reference is skipped gracefully");
+
+// K2: Skipping does NOT trigger default_policy denial for the absent field
+const ackDenyRules = JSON.parse(JSON.stringify(minimalVenue));
+ackDenyRules.default_policy = "deny_if_unspecified";
+ackDenyRules.user_acknowledgment_requirements = ["deposit_policy"];
+const k2 = sdk.evaluateCompliance(ackDenyRules, { channel: "phone" });
+assert.strictEqual(k2.userAcknowledgmentRequirements.defined, true, "ack should be defined");
+assert.deepStrictEqual(k2.userAcknowledgmentRequirements.policies, [], "absent deposit_policy should be skipped");
+// deposit_policy absence is still governed by default_policy independently — the ack skip doesn't cascade
+assert.strictEqual(k2.depositPolicy.defined, false, "deposit_policy should still be undefined");
+assert.strictEqual(k2.depositPolicy.defaultPolicyResult, "DENIED_DEFAULT_POLICY", "deposit_policy absence governed by default_policy independently");
+console.log("PASS: K2 — acknowledgment skip does not cascade into additional default_policy denial");
+
+console.log("\nSDK tests: 31 passed, 0 failed.");

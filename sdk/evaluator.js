@@ -105,9 +105,25 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
 
   // 8. User acknowledgment requirements (permission field — governed by default_policy)
   if (rules.user_acknowledgment_requirements) {
+    const policyFieldMap = {
+      deposit_policy: "deposit_policy",
+      cancellation_policy: "cancellation_policy",
+      no_show_policy: "no_show_policy",
+    };
+    const activePolicies = [];
+    const skippedPolicies = [];
+    for (const policyName of rules.user_acknowledgment_requirements) {
+      const fieldKey = policyFieldMap[policyName] || policyName;
+      if (rules[fieldKey] !== undefined) {
+        activePolicies.push(policyName);
+      } else {
+        skippedPolicies.push(policyName);
+      }
+    }
     result.userAcknowledgmentRequirements = {
       defined: true,
-      policies: rules.user_acknowledgment_requirements,
+      policies: activePolicies,
+      skippedPolicies: skippedPolicies.length > 0 ? skippedPolicies : null,
     };
   } else {
     result.userAcknowledgmentRequirements = {

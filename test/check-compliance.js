@@ -468,4 +468,26 @@ try {
   process.exit(1);
 }
 
+// Test 23: absent acknowledgment reference shows informational skip note
+try {
+  const ackSkipRules = path.join(__dirname, "fixtures", "test-venue-with-ack-skip.json");
+  const cmd = `node ${cliPath} --rules ${ackSkipRules} --channel phone --disclosed true`;
+  const output = execSync(cmd, { encoding: "utf8" });
+  if (output.includes("user_acknowledgment_skipped") && output.includes("deposit_policy") && output.includes("cancellation_policy")) {
+    console.log(
+      "PASS: absent acknowledgment reference shows informational skip note"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected user_acknowledgment_skipped note for absent deposit_policy"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on acknowledgment skip test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
 console.log("\nAll compliance checker tests passed.");

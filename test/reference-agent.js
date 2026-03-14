@@ -191,5 +191,29 @@ assert(
   t22.bookingWindow.defined === true && t22.bookingWindow.enforced === true && t22.bookingWindow.result === "DENIED"
 );
 
+// Test 23: absent policy reference in acknowledgments is skipped gracefully
+const ackSkipRules = {
+  schema_version: "0.2",
+  venue_name: "Ack Test Venue",
+  venue_url: "https://ack-test.example.com",
+  last_updated: "2026-03-13",
+  effective_at: "2026-03-13",
+  default_policy: "deny_if_unspecified",
+  disclosure_required: { enabled: false },
+  allowed_channels: ["phone"],
+  user_acknowledgment_requirements: ["deposit_policy", "cancellation_policy"],
+  cancellation_policy: { penalty_applies: true, window_minutes: 60, penalty_amount: 25 }
+  // deposit_policy is intentionally absent
+};
+const t23 = evaluateCompliance(ackSkipRules);
+assert(
+  "absent deposit_policy reference skipped, cancellation_policy kept",
+  t23.userAcknowledgmentRequirements.defined === true &&
+  t23.userAcknowledgmentRequirements.policies.length === 1 &&
+  t23.userAcknowledgmentRequirements.policies[0] === "cancellation_policy" &&
+  t23.userAcknowledgmentRequirements.skippedPolicies !== null &&
+  t23.userAcknowledgmentRequirements.skippedPolicies[0] === "deposit_policy"
+);
+
 console.log(`\nReference agent tests: ${passed} passed, ${failed} failed.`);
 if (failed > 0) process.exit(1);
