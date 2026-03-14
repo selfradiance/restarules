@@ -29,7 +29,7 @@ const { validateRules, evaluateCompliance } = require("./path/to/restarules/sdk"
 
 // 1. Validate a rules file
 const rules = {
-  schema_version: "0.2",
+  schema_version: "0.3",
   venue_name: "Example Restaurant",
   venue_url: "https://example.com",
   last_updated: "2026-03-09",
@@ -71,28 +71,31 @@ console.log(decision.disclosure);   // { required: true, phrasing: "I am an AI a
   - `partySize` (number|null) — Party size for the booking
   - `action` (string|null) — The action type (e.g., `"booking_request"`, `"create_booking"`)
   - `attempts` (number|null) — Number of attempts the agent has made for this action
+  - `targetTime` (string|null) — ISO 8601 datetime of the proposed booking (e.g., `"2026-03-20T19:00:00"`). Required for `booking_window` enforcement when `action` is `"create_booking"`
+  - `currentTime` (string|null) — ISO 8601 datetime to use as "now" for booking window calculations. Defaults to the actual current time if omitted. Useful for deterministic testing
 - Returns an object with decisions for each rule section:
 
 | Property | Description |
 |---|---|
 | `disclosure` | `{ required, phrasing }` — whether the agent must identify itself |
-| `channel` | `{ result }` — `"ALLOWED"`, `"DENIED"`, or `"NOT_CHECKED"` |
+| `channel` | `{ result, source, allowedChannels }` — `"ALLOWED"`, `"DENIED"`, or `"NOT_CHECKED"`. `source` is `"per_action_override"` or `"base"` indicating which channel list was used. `allowedChannels` lists the effective channels |
 | `partySize` | `{ result, autoMax }` — `"ALLOWED"`, `"ESCALATE_TO_HUMAN"`, `"DENIED_DEFAULT_POLICY"`, or `"NOT_CHECKED"` |
 | `escalationConditions` | Array of non-party-size escalation triggers |
-| `rateLimit` | `{ result, limit, windowValue, windowUnit, appliesTo }` — `"WITHIN_LIMITS"`, `"EXCEEDED"`, `"DENIED_DEFAULT_POLICY"`, or `"NOT_CHECKED"` |
+| `rateLimit` | `{ result, limit, windowValue, windowUnit, appliesTo, countingScope }` — `"WITHIN_LIMITS"`, `"EXCEEDED"`, `"DENIED_DEFAULT_POLICY"`, or `"NOT_CHECKED"`. `countingScope` is `"per_agent"` (default), `"per_user"`, or `"per_session"` |
 | `thirdParty` | `{ defined, noResale, noTransfer, identityBound }` or `{ defined: false, defaultPolicyResult }` |
 | `complaintEndpoint` | URL string or `null` |
 | `venueMetadata` | `{ currency, timezone }` |
 | `depositPolicy` | `{ defined, required, amount, currency, refundable }` or `{ defined: false, defaultPolicyResult }` |
-| `userAcknowledgmentRequirements` | `{ defined, policies }` or `{ defined: false, defaultPolicyResult }` |
+| `userAcknowledgmentRequirements` | `{ defined, policies, skippedPolicies }` or `{ defined: false, defaultPolicyResult }`. `skippedPolicies` lists any policy names that reference absent fields (silently skipped, `null` when none) |
 | `cancellationPolicy` | `{ defined, penaltyApplies, windowMinutes, penaltyAmount, currency }` or `{ defined: false }` |
 | `noShowPolicy` | `{ defined, fee, currency, gracePeriodMinutes }` or `{ defined: false }` |
+| `bookingWindow` | `{ defined, enforced, result, reason, minHoursAhead, maxDaysAhead }` — `result` is `"ALLOWED"`, `"DENIED"`, or `"NOT_EVALUATED"`. `enforced` is `true` only when action is `create_booking`, `targetTime` is provided, and `venue_timezone` is present |
 
 Permission fields respect `default_policy` when absent — returning `"DENIED_DEFAULT_POLICY"` or `"ALLOWED"` depending on the venue's setting. Informational fields (`complaintEndpoint`, `cancellationPolicy`, `noShowPolicy`) never block actions.
 
 ## Schema Version
 
-This SDK validates against RestaRules schema v0.2. Both v0.1 and v0.2 rules files are accepted.
+This SDK validates against RestaRules schema v0.3. Rules files with `schema_version` `"0.1"`, `"0.2"`, or `"0.3"` are accepted.
 
 ## Links
 

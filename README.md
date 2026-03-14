@@ -116,7 +116,7 @@ The schema lives in `schema/`:
 - `agent-venue-rules.schema.json` — Formal JSON Schema (Draft 2020-12). This is the source of truth for what a valid rules file looks like.
 - `agent-venue-rules-example.json` — A complete example file for a fictional restaurant (The Golden Fork).
 
-The project includes two example venues: **The Golden Fork** (`schema/agent-venue-rules-example.json`) is a comprehensive reference example showing all available fields. **Bella Notte Trattoria** (`.well-known/agent-venue-rules.json`) is the live demo — a near-complete v0.2 file served via GitHub Pages at the `/.well-known/` URL.
+The project includes two example venues: **The Golden Fork** (`schema/agent-venue-rules-example.json`) is a comprehensive reference example showing all available fields. **Bella Notte Trattoria** (`.well-known/agent-venue-rules.json`) is the live demo — a near-complete v0.3 file served via GitHub Pages at the `/.well-known/` URL.
 
 ### Required Fields
 
@@ -164,6 +164,49 @@ The project includes two example venues: **The Golden Fork** (`schema/agent-venu
 | Definition | Values |
 |---|---|
 | `action_type` | `check_availability`, `create_booking`, `modify_booking`, `cancel_booking` — used by `rate_limits[].applies_to` and as keys in `allowed_channels_by_action` |
+
+### v0.3 Field Details
+
+#### `counting_scope` (rate limit sub-field)
+
+An optional enum on each rate limit rule declaring how attempts are counted. Values:
+
+- `per_agent` — count attempts per agent identity (default when absent)
+- `per_user` — count attempts per end user the agent is acting for
+- `per_session` — count attempts per agent session
+
+`per_ip` is explicitly excluded from the enum. When `counting_scope` is absent, agents default to `per_agent`.
+
+#### `allowed_channels_by_action`
+
+An optional top-level object providing per-action channel overrides. Each key is an action type (`check_availability`, `create_booking`, `modify_booking`, `cancel_booking`) and the value is an array of permitted channels.
+
+**Full override semantics:** When a key is present for an action, it completely replaces base `allowed_channels` for that action — it is not an intersection or merge. When a key is absent, base `allowed_channels` applies as the fallback. An empty array (`[]`) means no channel is permitted for that action.
+
+```json
+{
+  "allowed_channels": ["phone", "web"],
+  "allowed_channels_by_action": {
+    "create_booking": ["web"],
+    "modify_booking": ["phone"]
+  }
+}
+```
+
+In this example, `create_booking` is web-only, `modify_booking` is phone-only, and `check_availability` / `cancel_booking` fall back to base (`phone`, `web`).
+
+#### `booking_window`
+
+An optional top-level object constraining how far ahead or how close to the current time a booking can be made:
+
+- `min_hours_ahead` (number) — minimum lead time in hours (e.g., `2` means bookings must be at least 2 hours in the future)
+- `max_days_ahead` (number) — maximum days in advance (e.g., `30` means no bookings more than 30 days out)
+
+**Scope:** Applies to `create_booking` only. Other action types skip booking window evaluation.
+
+**Timezone requirement:** Enforcement requires `venue_timezone` to be present. Without it, the booking window is informational only — the agent surfaces the values but does not enforce them.
+
+**`default_policy` carve-out:** Absent `booking_window` never blocks, regardless of `default_policy`. This is an explicit carve-out — unlike other permission fields, a missing booking window is always treated as "no restriction."
 
 ## Validation
 
@@ -241,18 +284,18 @@ A demo rules file is hosted via GitHub Pages at:
 https://selfradiance.github.io/restarules/.well-known/agent-venue-rules.json
 ```
 
-This demonstrates the `/.well-known/` hosting pattern using a fictional restaurant (Bella Notte Trattoria). The demo file is a near-complete v0.2 example including all required fields plus `rate_limits`, `human_escalation_required`, `party_size_policy`, `deposit_policy`, `cancellation_policy`, `no_show_policy`, `user_acknowledgment_requirements`, `complaint_endpoint`, `venue_currency`, and `venue_timezone`. It uses `default_policy: "deny_if_unspecified"` with only `third_party_restrictions` omitted, showing how the default policy governs that single absent permission field.
+This demonstrates the `/.well-known/` hosting pattern using a fictional restaurant (Bella Notte Trattoria). The demo file is a near-complete v0.3 example including all required fields plus `rate_limits` (with `counting_scope`), `human_escalation_required`, `party_size_policy`, `deposit_policy`, `cancellation_policy`, `no_show_policy`, `booking_window`, `user_acknowledgment_requirements`, `complaint_endpoint`, `venue_currency`, and `venue_timezone`. It uses `default_policy: "deny_if_unspecified"` with `third_party_restrictions` and `allowed_channels_by_action` omitted, showing how the default policy governs those absent permission fields.
 
 ## Example Ecosystem
 
 The repo includes example rules files from four fictional restaurants, each illustrating a different policy posture. Together they show the range of conduct rules a venue might publish.
 
-| Venue | Default Policy | Channels | Party Size Auto-Book | Deposit | Key Feature |
-|---|---|---|---|---|---|
-| Bella Notte Trattoria | `deny_if_unspecified` | phone, web | Up to 4 | $25 refundable | Near-complete v0.2 file with all optional fields except `third_party_restrictions` |
-| The Corner Slice | `allow_if_unspecified` | phone, web, app, sms | Up to 10 | None | Minimal rules — even a casual venue benefits from basic boundaries |
-| Omakase Sato | `deny_if_unspecified` | web only | Up to 2 | $200 non-refundable | Maximum restriction — identity-bound, no resale, no transfer, all policies require user acknowledgment |
-| Magnolia Garden | `deny_if_unspecified` | phone, web, email | Up to 6 (human review above 8) | $50 refundable | Event-focused — large-party routing, scoped rate limits using `applies_to` |
+| Venue | Default Policy | Channels | Party Size Auto-Book | Deposit | v0.3 Features | Key Feature |
+|---|---|---|---|---|---|---|
+| Bella Notte Trattoria | `deny_if_unspecified` | phone, web | Up to 4 | $25 refundable | `counting_scope`, `booking_window` | Near-complete v0.3 file with all optional fields except `third_party_restrictions` and `allowed_channels_by_action` |
+| The Corner Slice | `allow_if_unspecified` | phone, web, app, sms | Up to 10 | None | — | Minimal rules — even a casual venue benefits from basic boundaries |
+| Omakase Sato | `deny_if_unspecified` | web only | Up to 2 | $200 non-refundable | `counting_scope` (per_user), `allowed_channels_by_action`, `booking_window` | Maximum restriction — identity-bound, strict per-action channels, tight booking window |
+| Magnolia Garden | `deny_if_unspecified` | phone, web, email | Up to 6 (human review above 8) | $50 refundable | `counting_scope` (per_session), `booking_window` | Event-focused — large-party routing, long booking horizons (48h–180d) |
 
 **File locations:**
 
