@@ -12,6 +12,20 @@ if (!url) {
   process.exit(1);
 }
 
+// --- URL validation ---
+let parsedUrl;
+try {
+  parsedUrl = new URL(url);
+} catch (err) {
+  console.error(`✗ Invalid URL: ${url}`);
+  process.exit(1);
+}
+
+if (parsedUrl.protocol !== "https:") {
+  console.error(`✗ Only HTTPS URLs are allowed (got ${parsedUrl.protocol})`);
+  process.exit(1);
+}
+
 const flags = {};
 for (let i = 1; i < args.length; i++) {
   if (args[i].startsWith("--") && i + 1 < args.length) {
@@ -30,9 +44,12 @@ const hasFlags = channel || partySize !== null || action || attempts !== null;
 (async () => {
   console.log(`Fetching rules from: ${url}`);
 
+  const FETCH_TIMEOUT_MS = 10000;
+  const MAX_RESPONSE_BYTES = 1024 * 1024; // 1 MB
+
   let response;
   try {
-    response = await fetch(url);
+    response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   } catch (err) {
     console.error(`✗ Failed to fetch rules: ${err.message}`);
     process.exit(1);
@@ -43,9 +60,28 @@ const hasFlags = channel || partySize !== null || action || attempts !== null;
     process.exit(1);
   }
 
+  // Validate content-type header
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("json")) {
+    console.error(`✗ Unexpected content-type: ${contentType} (expected application/json)`);
+    process.exit(1);
+  }
+
+  // Check response size via content-length header (if available)
+  const contentLength = parseInt(response.headers.get("content-length"), 10);
+  if (Number.isFinite(contentLength) && contentLength > MAX_RESPONSE_BYTES) {
+    console.error(`✗ Response too large: ${contentLength} bytes (max ${MAX_RESPONSE_BYTES})`);
+    process.exit(1);
+  }
+
   let rules;
   try {
-    rules = await response.json();
+    const text = await response.text();
+    if (text.length > MAX_RESPONSE_BYTES) {
+      console.error(`✗ Response too large: ${text.length} bytes (max ${MAX_RESPONSE_BYTES})`);
+      process.exit(1);
+    }
+    rules = JSON.parse(text);
   } catch (err) {
     console.error(`✗ Response is not valid JSON: ${err.message}`);
     process.exit(1);

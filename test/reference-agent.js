@@ -336,5 +336,38 @@ assert(
   t33_inv.inputError && t33_inv.inputError.result === "INVALID_INPUT" && t33_inv.inputError.reason.includes("currentTime")
 );
 
+// ============================================================
+// Category O: Fetch Hardening (agent.js CLI tests)
+// ============================================================
+
+const { spawnSync } = require("child_process");
+const path = require("path");
+const agentPath = path.join(__dirname, "..", "reference-agent", "agent.js");
+
+function runAgent(urlArg) {
+  return spawnSync("node", [agentPath, urlArg], { encoding: "utf8", timeout: 5000 });
+}
+
+// O1: HTTP URL rejected (HTTPS required)
+const o1 = runAgent("http://example.com/rules.json");
+assert(
+  "HTTP URL rejected — only HTTPS allowed",
+  o1.status !== 0 && o1.stderr.includes("Only HTTPS")
+);
+
+// O2: Invalid URL rejected
+const o2 = runAgent("not-a-url");
+assert(
+  "Invalid URL rejected with error message",
+  o2.status !== 0 && o2.stderr.includes("Invalid URL")
+);
+
+// O3: Missing URL argument exits with error
+const o3 = spawnSync("node", [agentPath], { encoding: "utf8", timeout: 5000 });
+assert(
+  "Missing URL argument exits with usage message",
+  o3.status !== 0 && o3.stderr.includes("Usage:")
+);
+
 console.log(`\nReference agent tests: ${passed} passed, ${failed} failed.`);
 if (failed > 0) process.exit(1);
