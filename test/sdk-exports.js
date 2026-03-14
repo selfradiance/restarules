@@ -358,4 +358,16 @@ assert.ok(m5.inputError, "Infinity partySize should produce inputError");
 assert.strictEqual(m5.inputError.result, "INVALID_INPUT", "result should be INVALID_INPUT");
 console.log("PASS: M5 — Infinity party size returns INVALID_INPUT");
 
-console.log("\nSDK tests: 37 passed, 0 failed.");
+// ============================================================
+// Category N: Schema Sync Verification
+// ============================================================
+
+// N1: sdk/schema.json matches the canonical schema file
+const fs = require("fs");
+const path = require("path");
+const canonicalSchema = fs.readFileSync(path.join(__dirname, "..", "schema", "agent-venue-rules.schema.json"), "utf8");
+const sdkSchema = fs.readFileSync(path.join(__dirname, "..", "sdk", "schema.json"), "utf8");
+assert.strictEqual(sdkSchema, canonicalSchema, "sdk/schema.json must match schema/agent-venue-rules.schema.json");
+console.log("PASS: N1 — sdk/schema.json matches the canonical schema file");
+
+console.log("\nSDK tests: 38 passed, 0 failed.");

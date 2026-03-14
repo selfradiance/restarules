@@ -1,15 +1,7 @@
 #!/usr/bin/env node
 
-const path = require("path");
-const Ajv = require("ajv/dist/2020");
-const addFormats = require("ajv-formats");
 const { evaluateCompliance } = require("./decisions");
-
-const schema = require(path.resolve(__dirname, "..", "schema", "agent-venue-rules.schema.json"));
-
-const ajv = new Ajv();
-addFormats(ajv);
-const validate = ajv.compile(schema);
+const { validateRules } = require("../sdk/validator");
 
 // Parse arguments: first positional arg is URL, remaining are --flag value pairs
 const args = process.argv.slice(2);
@@ -61,10 +53,10 @@ const hasFlags = channel || partySize !== null || action || attempts !== null;
 
   console.log(`✓ Rules loaded for venue: ${rules.venue_name}`);
 
-  const valid = validate(rules);
+  const { valid, errors } = validateRules(rules);
   if (!valid) {
     console.error("✗ Schema validation failed:");
-    for (const error of validate.errors) {
+    for (const error of errors) {
       console.error(`  - ${error.instancePath || "(root)"}: ${error.message}`);
     }
     process.exit(1);

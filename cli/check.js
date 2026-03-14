@@ -27,9 +27,7 @@
  */
 
 const fs = require("fs");
-const path = require("path");
-const Ajv = require("ajv/dist/2020");
-const addFormats = require("ajv-formats");
+const { validateRules } = require("../sdk/validator");
 
 // --- Argument parsing ---
 
@@ -96,28 +94,15 @@ try {
   process.exit(1);
 }
 
-let schema;
-try {
-  const schemaPath = path.join(__dirname, "..", "schema", "agent-venue-rules.schema.json");
-  const raw = fs.readFileSync(schemaPath, "utf8");
-  schema = JSON.parse(raw);
-} catch (err) {
-  console.error(`Failed to load schema: ${err.message}`);
-  process.exit(1);
-}
-
 // --- Validate against schema ---
 
-const ajv = new Ajv({ strict: false });
-addFormats(ajv);
-const validate = ajv.compile(schema);
-const valid = validate(rules);
+const { valid, errors } = validateRules(rules);
 
 if (!valid) {
   console.log("DENY");
   console.log("reasons:");
   console.log("  - Rules file failed schema validation");
-  validate.errors.forEach((err) => {
+  errors.forEach((err) => {
     console.log(`  - ${err.instancePath || "/"}: ${err.message}`);
   });
   process.exit(2);

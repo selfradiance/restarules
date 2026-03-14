@@ -15,7 +15,8 @@
     "README.md"
   ],
   "scripts": {
-    "test": "echo \"Run tests from the repo root with: npm test\" && exit 0"
+    "test": "echo \"Run tests from the repo root with: npm test\" && exit 0",
+    "prepublishOnly": "cp ../schema/agent-venue-rules.schema.json schema.json"
   },
   "keywords": [
     "restarules",
