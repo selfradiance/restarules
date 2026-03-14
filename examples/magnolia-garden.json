@@ -1,0 +1,65 @@
+{
+  "schema_version": "0.2",
+  "venue_name": "Magnolia Garden",
+  "venue_url": "https://www.magnoliagarden.example.com",
+  "last_updated": "2026-03-13",
+  "effective_at": "2026-03-13",
+  "default_policy": "deny_if_unspecified",
+  "venue_currency": "USD",
+  "venue_timezone": "America/Chicago",
+  "disclosure_required": {
+    "enabled": true,
+    "phrasing": "Please identify yourself as an AI assistant when speaking with our events team."
+  },
+  "allowed_channels": ["phone", "web", "email"],
+  "rate_limits": [
+    {
+      "action": "booking_request",
+      "limit": 5,
+      "window_value": 1,
+      "window_unit": "hour"
+    },
+    {
+      "action": "booking_request",
+      "limit": 3,
+      "window_value": 1,
+      "window_unit": "hour",
+      "applies_to": ["modify_booking"]
+    }
+  ],
+  "human_escalation_required": {
+    "conditions": ["reservation_modification"]
+  },
+  "third_party_restrictions": {
+    "no_resale": true,
+    "no_transfer": false,
+    "identity_bound_booking": false
+  },
+  "party_size_policy": {
+    "auto_book_max": 6,
+    "human_review_above": 8,
+    "large_party_channels": ["phone", "email"]
+  },
+  "deposit_policy": {
+    "required": true,
+    "amount": 50,
+    "currency": "USD",
+    "refundable": true
+  },
+  "cancellation_policy": {
+    "penalty_applies": true,
+    "window_minutes": 1440,
+    "penalty_amount": 50,
+    "currency": "USD"
+  },
+  "no_show_policy": {
+    "fee": 100,
+    "currency": "USD",
+    "grace_period_minutes": 15
+  },
+  "user_acknowledgment_requirements": [
+    "deposit_policy",
+    "cancellation_policy"
+  ],
+  "complaint_endpoint": "https://www.magnoliagarden.example.com/contact"
+}
