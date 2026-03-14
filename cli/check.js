@@ -224,13 +224,19 @@ if (rules.user_acknowledgment_requirements) {
 // Check 8: booking_window (applies to create_booking only; absence never blocks)
 // booking_window is NOT governed by default_policy — absence means no time restriction.
 if (rules.booking_window && args["target-time"] && args.action === "create_booking") {
-  if (rules.venue_timezone) {
+  const bw = rules.booking_window;
+  // Check for contradictory window (min_hours_ahead >= max_days_ahead * 24)
+  const isContradictory = bw.min_hours_ahead !== undefined && bw.max_days_ahead !== undefined &&
+    bw.min_hours_ahead >= bw.max_days_ahead * 24;
+  if (isContradictory) {
+    // Contradictory window — treat as non-actionable, warn instead of deny
+    console.log(`  booking_window_warning: Contradictory booking window: min_hours_ahead (${bw.min_hours_ahead}) exceeds max_days_ahead (${bw.max_days_ahead}) converted to hours (${bw.max_days_ahead * 24}). Treating as non-actionable.`);
+  } else if (rules.venue_timezone) {
     const now = new Date();
     const target = new Date(args["target-time"]);
     const diffMs = target.getTime() - now.getTime();
     const diffHours = diffMs / (1000 * 60 * 60);
     const diffDays = diffMs / (1000 * 60 * 60 * 24);
-    const bw = rules.booking_window;
     if (bw.min_hours_ahead !== undefined && diffHours < bw.min_hours_ahead) {
       reasons.push(
         `Booking is ${diffHours.toFixed(1)} hours ahead, booking_window.min_hours_ahead requires ${bw.min_hours_ahead}`

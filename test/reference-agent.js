@@ -260,5 +260,29 @@ assert(
   t26.bookingWindow.defined === true && t26.bookingWindow.enforced === true && t26.bookingWindow.result === "DENIED"
 );
 
+// Test 27: contradictory booking window → non-actionable, not denied
+const contradictoryWindowRules = {
+  schema_version: "0.3",
+  venue_name: "Contradictory Window Bistro",
+  venue_url: "https://contradictory-window.example.com",
+  last_updated: "2026-03-10",
+  effective_at: "2026-03-10",
+  default_policy: "deny_if_unspecified",
+  disclosure_required: { enabled: false },
+  allowed_channels: ["phone"],
+  venue_timezone: "America/New_York",
+  booking_window: { min_hours_ahead: 48, max_days_ahead: 1 }
+};
+const t27 = evaluateCompliance(contradictoryWindowRules, {
+  action: "create_booking",
+  targetTime: "2026-03-15T18:00:00-05:00",
+  currentTime: "2026-03-14T12:00:00-05:00",
+});
+assert(
+  "contradictory booking window → NOT_EVALUATED with warning (non-actionable)",
+  t27.bookingWindow.defined === true && t27.bookingWindow.enforced === false &&
+  t27.bookingWindow.result === "NOT_EVALUATED" && t27.bookingWindow.reason.includes("Contradictory")
+);
+
 console.log(`\nReference agent tests: ${passed} passed, ${failed} failed.`);
 if (failed > 0) process.exit(1);

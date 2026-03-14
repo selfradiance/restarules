@@ -8140,7 +8140,17 @@
           const bw = rules.booking_window;
           const hasTimezone = !!rules.venue_timezone;
           const canEvaluate = action === "create_booking" && targetTime !== null && hasTimezone;
-          if (canEvaluate) {
+          const isContradictory = bw.min_hours_ahead !== void 0 && bw.max_days_ahead !== void 0 && bw.min_hours_ahead >= bw.max_days_ahead * 24;
+          if (isContradictory) {
+            result.bookingWindow = {
+              defined: true,
+              enforced: false,
+              result: "NOT_EVALUATED",
+              reason: `Contradictory booking window: min_hours_ahead (${bw.min_hours_ahead}) exceeds max_days_ahead (${bw.max_days_ahead}) converted to hours (${bw.max_days_ahead * 24}). Treating as non-actionable.`,
+              minHoursAhead: bw.min_hours_ahead,
+              maxDaysAhead: bw.max_days_ahead
+            };
+          } else if (canEvaluate) {
             const now = currentTime ? new Date(currentTime) : /* @__PURE__ */ new Date();
             const target = new Date(targetTime);
             const diffMs = target.getTime() - now.getTime();

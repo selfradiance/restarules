@@ -534,4 +534,26 @@ try {
   process.exit(1);
 }
 
+// Test 26: contradictory booking window → no denial, warning output
+try {
+  const contradictoryRules = path.join(__dirname, "fixtures", "test-venue-with-contradictory-window.json");
+  const cmd = `node ${cliPath} --rules ${contradictoryRules} --channel phone --disclosed true --action create_booking --target-time 2026-03-15T18:00:00-05:00`;
+  const output = execSync(cmd, { encoding: "utf8" });
+  if (output.includes("Contradictory") && !output.includes("booking_window.min_hours_ahead") && !output.includes("booking_window.max_days_ahead")) {
+    console.log(
+      "PASS: contradictory booking window → no booking window denial, warning output"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected Contradictory warning and no booking window denial for contradictory window"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on contradictory booking window test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
 console.log("\nAll compliance checker tests passed.");

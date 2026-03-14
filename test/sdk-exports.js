@@ -297,4 +297,19 @@ assert.strictEqual(k2.depositPolicy.defined, false, "deposit_policy should still
 assert.strictEqual(k2.depositPolicy.defaultPolicyResult, "DENIED_DEFAULT_POLICY", "deposit_policy absence governed by default_policy independently");
 console.log("PASS: K2 — acknowledgment skip does not cascade into additional default_policy denial");
 
-console.log("\nSDK tests: 31 passed, 0 failed.");
+// L1: Contradictory booking window → non-actionable, not denied, warning present
+const contradictoryWindowVenue = JSON.parse(JSON.stringify(fullVenue));
+contradictoryWindowVenue.booking_window = { min_hours_ahead: 48, max_days_ahead: 1 };
+contradictoryWindowVenue.venue_timezone = "America/New_York";
+const l1 = sdk.evaluateCompliance(contradictoryWindowVenue, {
+  action: "create_booking",
+  targetTime: "2026-03-15T18:00:00-05:00",
+  currentTime: "2026-03-14T12:00:00-05:00",
+});
+assert.strictEqual(l1.bookingWindow.defined, true, "window should be defined");
+assert.strictEqual(l1.bookingWindow.enforced, false, "contradictory window should not be enforced");
+assert.strictEqual(l1.bookingWindow.result, "NOT_EVALUATED", "result should be NOT_EVALUATED");
+assert.ok(l1.bookingWindow.reason.includes("Contradictory"), "reason should mention contradictory");
+console.log("PASS: L1 — contradictory booking window treated as non-actionable with warning");
+
+console.log("\nSDK tests: 32 passed, 0 failed.");

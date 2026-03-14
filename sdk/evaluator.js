@@ -190,7 +190,20 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
     const hasTimezone = !!rules.venue_timezone;
     const canEvaluate = action === "create_booking" && targetTime !== null && hasTimezone;
 
-    if (canEvaluate) {
+    // Check for contradictory window (min_hours_ahead >= max_days_ahead * 24)
+    const isContradictory = bw.min_hours_ahead !== undefined && bw.max_days_ahead !== undefined &&
+      bw.min_hours_ahead >= bw.max_days_ahead * 24;
+
+    if (isContradictory) {
+      result.bookingWindow = {
+        defined: true,
+        enforced: false,
+        result: "NOT_EVALUATED",
+        reason: `Contradictory booking window: min_hours_ahead (${bw.min_hours_ahead}) exceeds max_days_ahead (${bw.max_days_ahead}) converted to hours (${bw.max_days_ahead * 24}). Treating as non-actionable.`,
+        minHoursAhead: bw.min_hours_ahead,
+        maxDaysAhead: bw.max_days_ahead,
+      };
+    } else if (canEvaluate) {
       const now = currentTime ? new Date(currentTime) : new Date();
       const target = new Date(targetTime);
       const diffMs = target.getTime() - now.getTime();
