@@ -67,6 +67,15 @@ The key words "MUST", "MUST NOT", "SHOULD", "SHOULD NOT", and "MAY" in this docu
 
 **Informational Field:** A field in the rules file that provides information to the agent but MUST NOT block or deny agent actions. Informational fields are not subject to `default_policy` when absent. Examples: `complaint_endpoint`, `cancellation_policy`, `no_show_policy`.
 
+### Action Vocabularies
+
+The schema defines two distinct action vocabularies that serve different purposes:
+
+- **Rate limit action labels** (`rate_limits[].action`): Venue-facing category labels — `booking_request`, `inquiry`, `cancellation_request`, `complaint`. These identify the conceptual type of a rate limit rule as the venue understands it.
+- **Shared action types** (`$defs.action_type`): Agent-facing operation identifiers — `check_availability`, `create_booking`, `modify_booking`, `cancel_booking`. These are used by `applies_to` (to scope rate limit rules to specific operations) and as keys in `allowed_channels_by_action` (to scope channel permissions per operation).
+
+The two vocabularies are intentionally separate. Rate limit action labels describe the venue's intent; shared action types describe the agent's operations. When `applies_to` is present on a rate limit rule, it is the authoritative field for action-type matching. When absent, agents MAY treat the rule as applying to all supported action types.
+
 ## 5. Discovery and Transport
 
 A venue publishes its rules file at the following well-known URI path, relative to the venue's primary domain:
@@ -343,7 +352,7 @@ An empty array for an action key (e.g., `"modify_booking": []`) means no channel
 - `applies_to` (array, optional): Specific action types this rule applies to, referencing the shared `action_type` enum (`"check_availability"`, `"create_booking"`, `"modify_booking"`, `"cancel_booking"`)
 - `counting_scope` (string, optional): Declares the scope for counting rate limit attempts against this rule. Valid values: `"per_agent"`, `"per_user"`, `"per_session"`. If absent, agents MUST treat the rule as `"per_agent"`.
 
-The `action` field is a venue-defined label that identifies the conceptual category of the rate limit rule (e.g., `"booking_request"`). The `applies_to` field, when present, is the authoritative field for action-type matching — it restricts the rule to specific action types from the shared `action_type` vocabulary. If `applies_to` is absent, the agent MAY treat the rule as applying to all supported action types. The `action` field is always required; `applies_to` is an optional refinement.
+The `action` field is a venue-defined label that identifies the conceptual category of the rate limit rule (e.g., `"booking_request"`). The `applies_to` field, when present, is the authoritative field for action-type matching — it restricts the rule to specific action types from the shared `action_type` vocabulary. If `applies_to` is absent, the agent MAY treat the rule as applying to all supported action types. The `action` field is always required; `applies_to` is an optional refinement. See Section 4, "Action Vocabularies" for a full explanation of the two action vocabularies and their relationship.
 
 The `counting_scope` field declares how the venue intends rate limit attempts to be counted:
 
