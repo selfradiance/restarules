@@ -121,15 +121,15 @@ const hasFlags = channel || partySize !== null || action || attempts !== null;
     } else {
       console.log(`3. Party size check (${partySize}): ${report.partySize.result} — human_escalation_required not defined, applying default_policy`);
     }
-    if (report.partySize.conditions && report.partySize.conditions.length > 0) {
-      console.log(`   Escalation conditions also defined: ${report.partySize.conditions.join(", ")}`);
+    if (report.escalationConditions && report.escalationConditions.length > 0) {
+      console.log(`   Escalation conditions also defined: ${report.escalationConditions.join(", ")}`);
     }
   } else {
-    if (report.partySize.autoMax !== null) {
+    if (report.partySize && report.partySize.autoMax !== null) {
       console.log(`3. Party size check: (no party size provided)`);
       console.log(`   Auto-max: ${report.partySize.autoMax}`);
-      if (report.partySize.conditions.length > 0) {
-        console.log(`   Escalation conditions: ${report.partySize.conditions.join(", ")}`);
+      if (report.escalationConditions && report.escalationConditions.length > 0) {
+        console.log(`   Escalation conditions: ${report.escalationConditions.join(", ")}`);
       }
     } else {
       const fallback = rules.default_policy === "allow_if_unspecified" ? "allow" : "deny";
