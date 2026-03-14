@@ -1,5 +1,5 @@
 {
-  "schema_version": "0.2",
+  "schema_version": "0.3",
   "venue_name": "Omakase Sato",
   "venue_url": "https://www.omakasesato.example.com",
   "last_updated": "2026-03-13",
@@ -12,18 +12,26 @@
     "phrasing": "All AI agents must identify themselves before any interaction with our staff."
   },
   "allowed_channels": ["web"],
+  "allowed_channels_by_action": {
+    "check_availability": ["web"],
+    "create_booking": ["web"],
+    "modify_booking": ["phone"],
+    "cancel_booking": ["phone"]
+  },
   "rate_limits": [
     {
       "action": "booking_request",
       "limit": 2,
       "window_value": 1,
-      "window_unit": "day"
+      "window_unit": "day",
+      "counting_scope": "per_user"
     },
     {
       "action": "inquiry",
       "limit": 5,
       "window_value": 1,
-      "window_unit": "hour"
+      "window_unit": "hour",
+      "counting_scope": "per_user"
     }
   ],
   "human_escalation_required": {
@@ -55,6 +63,10 @@
     "fee": 200,
     "currency": "USD",
     "grace_period_minutes": 10
+  },
+  "booking_window": {
+    "min_hours_ahead": 24,
+    "max_days_ahead": 14
   },
   "user_acknowledgment_requirements": [
     "deposit_policy",

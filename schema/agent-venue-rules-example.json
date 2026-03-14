@@ -1,5 +1,5 @@
 {
-  "schema_version": "0.2",
+  "schema_version": "0.3",
   "venue_name": "The Golden Fork",
   "venue_url": "https://www.thegoldenfork.com",
   "last_updated": "2026-03-09",
@@ -17,13 +17,21 @@
 
   "allowed_channels": ["phone", "web"],
 
+  "allowed_channels_by_action": {
+    "check_availability": ["phone", "web"],
+    "create_booking": ["web"],
+    "modify_booking": ["phone"],
+    "cancel_booking": ["phone", "web"]
+  },
+
   "rate_limits": [
     {
       "action": "booking_request",
       "limit": 3,
       "window_unit": "hour",
       "window_value": 1,
-      "applies_to": ["create_booking", "modify_booking"]
+      "applies_to": ["create_booking", "modify_booking"],
+      "counting_scope": "per_agent"
     }
   ],
 
@@ -65,6 +73,11 @@
   },
 
   "user_acknowledgment_requirements": ["deposit_policy", "cancellation_policy", "no_show_policy"],
+
+  "booking_window": {
+    "min_hours_ahead": 2,
+    "max_days_ahead": 60
+  },
 
   "complaint_endpoint": "https://www.thegoldenfork.com/report-agent"
 }
