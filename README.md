@@ -239,6 +239,25 @@ https://selfradiance.github.io/restarules/.well-known/agent-venue-rules.json
 
 This demonstrates the `/.well-known/` hosting pattern using a fictional restaurant (Bella Notte Trattoria). The demo file is a near-complete v0.2 example including all required fields plus `rate_limits`, `human_escalation_required`, `party_size_policy`, `deposit_policy`, `cancellation_policy`, `no_show_policy`, `user_acknowledgment_requirements`, `complaint_endpoint`, `venue_currency`, and `venue_timezone`. It uses `default_policy: "deny_if_unspecified"` with only `third_party_restrictions` omitted, showing how the default policy governs that single absent permission field.
 
+## Example Ecosystem
+
+The repo includes example rules files from four fictional restaurants, each illustrating a different policy posture. Together they show the range of conduct rules a venue might publish.
+
+| Venue | Default Policy | Channels | Party Size Auto-Book | Deposit | Key Feature |
+|---|---|---|---|---|---|
+| Bella Notte Trattoria | `deny_if_unspecified` | phone, web | Up to 4 | $25 refundable | Near-complete v0.2 file with all optional fields except `third_party_restrictions` |
+| The Corner Slice | `allow_if_unspecified` | phone, web, app, sms | Up to 10 | None | Minimal rules — even a casual venue benefits from basic boundaries |
+| Omakase Sato | `deny_if_unspecified` | web only | Up to 2 | $200 non-refundable | Maximum restriction — identity-bound, no resale, no transfer, all policies require user acknowledgment |
+| Magnolia Garden | `deny_if_unspecified` | phone, web, email | Up to 6 (human review above 8) | $50 refundable | Event-focused — large-party routing, scoped rate limits using `applies_to` |
+
+**File locations:**
+
+- **Bella Notte:** [`.well-known/agent-venue-rules.json`](.well-known/agent-venue-rules.json) (also served live via [GitHub Pages](https://selfradiance.github.io/restarules/.well-known/agent-venue-rules.json))
+- **The Corner Slice:** [`examples/the-corner-slice.json`](examples/the-corner-slice.json)
+- **Omakase Sato:** [`examples/omakase-sato.json`](examples/omakase-sato.json)
+- **Magnolia Garden:** [`examples/magnolia-garden.json`](examples/magnolia-garden.json)
+- **Golden Fork** (full schema example): [`schema/agent-venue-rules-example.json`](schema/agent-venue-rules-example.json)
+
 ## Hosting Your Own Rules File
 
 To publish rules for your venue, host a JSON file at `/.well-known/agent-venue-rules.json` on your restaurant's domain. For example, if your website is `https://example-restaurant.com`, the rules file should be fetchable at:
