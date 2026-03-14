@@ -1,5 +1,5 @@
 {
-  "schema_version": "0.1",
+  "schema_version": "0.3",
   "venue_name": "Test Venue (no complaint endpoint)",
   "venue_url": "https://test-venue.example.com",
   "last_updated": "2026-03-05",

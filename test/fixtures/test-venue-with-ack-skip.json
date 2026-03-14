@@ -1,5 +1,5 @@
 {
-  "schema_version": "0.2",
+  "schema_version": "0.3",
   "venue_name": "Ack Skip Test Venue",
   "venue_url": "https://ack-skip-test.example.com",
   "last_updated": "2026-03-13",
