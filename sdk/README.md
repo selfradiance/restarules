@@ -69,7 +69,7 @@ console.log(decision.disclosure);   // { required: true, phrasing: "I am an AI a
 - **params** (object) — The proposed agent action:
   - `channel` (string|null) — The channel the agent intends to use (e.g., `"phone"`, `"web"`, `"sms"`)
   - `partySize` (number|null) — Party size for the booking
-  - `action` (string|null) — The action type (e.g., `"booking_request"`, `"create_booking"`)
+  - `action` (string|null) — The action identifier. For rate limit checks, this matches against `rate_limits[].action` (venue-facing labels like `"booking_request"`, `"inquiry"`). For channel checks, this matches against `allowed_channels_by_action` keys (agent-facing action types like `"create_booking"`, `"cancel_booking"`). For booking window checks, must be `"create_booking"` to trigger enforcement. See spec Section 4 (Action Vocabularies) for the full explanation of the two vocabularies.
   - `attempts` (number|null) — Number of attempts the agent has made for this action
   - `targetTime` (string|null) — ISO 8601 datetime of the proposed booking (e.g., `"2026-03-20T19:00:00-05:00"`). Required for `booking_window` enforcement when `action` is `"create_booking"`. MUST be timezone-qualified (with UTC offset or Z suffix) — naive timestamps without timezone offsets produce environment-dependent results and MUST NOT be used
   - `currentTime` (string|null) — ISO 8601 datetime to use as "now" for booking window calculations (e.g., `"2026-03-20T14:00:00-05:00"`). Defaults to the actual current time if omitted. Useful for deterministic testing. MUST be timezone-qualified when provided
