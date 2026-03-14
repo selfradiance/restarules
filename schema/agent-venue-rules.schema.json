@@ -256,7 +256,7 @@
         "amount": {
           "type": "number",
           "minimum": 0,
-          "description": "Deposit amount per person or per booking (context-dependent)."
+          "description": "Deposit amount per booking."
         },
         "currency": {
           "type": "string",

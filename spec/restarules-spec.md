@@ -415,7 +415,7 @@ If a venue has no mechanism for identifying agents or users at the declared scop
 **Meaning:** Specifies whether the venue requires a deposit for bookings and, if so, the details.
 
 - `required`: Whether a deposit is required.
-- `amount`: The deposit amount.
+- `amount`: The monetary deposit amount per booking. A future schema version may introduce an `amount_basis` field to distinguish per-booking from per-person amounts; until then, agents MUST treat this value as a flat per-booking amount.
 - `currency`: The currency of the deposit (ISO 4217). If absent, agents SHOULD refer to `venue_currency`.
 - `refundable`: Whether the deposit is refundable.
 

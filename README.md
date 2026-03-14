@@ -141,7 +141,7 @@ The schema permits unknown top-level fields for forward compatibility — agents
 | `human_escalation_required` | Non-party-size escalation triggers (e.g., `reservation_modification`) |
 | `third_party_restrictions` | `no_resale`, `no_transfer`, `identity_bound_booking` (booleans) |
 | `party_size_policy` | `auto_book_max` (required), `human_review_above` (optional), `large_party_channels` (optional) |
-| `deposit_policy` | `required` (boolean, required), `amount`, `currency`, `refundable` |
+| `deposit_policy` | `required` (boolean, required), `amount` (per booking), `currency`, `refundable` |
 | `user_acknowledgment_requirements` | Array of policy names (`deposit_policy`, `cancellation_policy`, `no_show_policy`) the agent must confirm with the user |
 | `allowed_channels_by_action` | Per-action channel overrides. Each key is an action type, value is a channel array that fully replaces base `allowed_channels` for that action |
 | `booking_window` | Booking lead-time constraints: `min_hours_ahead` (number), `max_days_ahead` (number). Applies to `create_booking` only. Absent booking window never blocks regardless of `default_policy` |
