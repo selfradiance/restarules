@@ -74,6 +74,45 @@
       "minItems": 1,
       "uniqueItems": true
     },
+    "allowed_channels_by_action": {
+      "type": "object",
+      "description": "Per-action channel overrides. When a key is present for an action, it completely replaces base allowed_channels for that action. When absent, base allowed_channels applies.",
+      "additionalProperties": false,
+      "properties": {
+        "check_availability": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["phone", "web", "sms", "email", "app"]
+          },
+          "uniqueItems": true
+        },
+        "create_booking": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["phone", "web", "sms", "email", "app"]
+          },
+          "uniqueItems": true
+        },
+        "modify_booking": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["phone", "web", "sms", "email", "app"]
+          },
+          "uniqueItems": true
+        },
+        "cancel_booking": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["phone", "web", "sms", "email", "app"]
+          },
+          "uniqueItems": true
+        }
+      }
+    },
     "rate_limits": {
       "type": "array",
       "description": "Rate limits on how frequently a single agent may perform specific actions at this venue.",

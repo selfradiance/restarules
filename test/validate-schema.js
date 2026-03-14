@@ -273,6 +273,63 @@ if (validNoScope) {
   failed = true;
 }
 
+// Test 23: valid allowed_channels_by_action accepted
+const withChannelOverrides = JSON.parse(JSON.stringify(example));
+withChannelOverrides.allowed_channels_by_action = {
+  create_booking: ["web", "app"],
+  cancel_booking: ["phone", "web", "email"]
+};
+const validChannelOverrides = validate(withChannelOverrides);
+if (validChannelOverrides) {
+  console.log('PASS: Valid allowed_channels_by_action with per-action channel overrides accepted.');
+} else {
+  for (const error of validate.errors) {
+    console.error('FAIL:', error.instancePath, error.message);
+  }
+  failed = true;
+}
+
+// Test 24: invalid action key in allowed_channels_by_action rejected
+const invalidActionKey = JSON.parse(JSON.stringify(example));
+invalidActionKey.allowed_channels_by_action = {
+  invalid_action: ["web"]
+};
+const validInvalidKey = validate(invalidActionKey);
+if (!validInvalidKey) {
+  console.log('PASS: Invalid action key in allowed_channels_by_action correctly fails validation.');
+} else {
+  console.error('FAIL: Invalid action key in allowed_channels_by_action should have failed validation.');
+  failed = true;
+}
+
+// Test 25: invalid channel value in allowed_channels_by_action rejected
+const invalidChannelOverride = JSON.parse(JSON.stringify(example));
+invalidChannelOverride.allowed_channels_by_action = {
+  create_booking: ["carrier_pigeon"]
+};
+const validInvalidChannel = validate(invalidChannelOverride);
+if (!validInvalidChannel) {
+  console.log('PASS: Invalid channel value in allowed_channels_by_action correctly fails validation.');
+} else {
+  console.error('FAIL: Invalid channel value in allowed_channels_by_action should have failed validation.');
+  failed = true;
+}
+
+// Test 26: empty array in allowed_channels_by_action accepted (means no channels for that action)
+const emptyChannelOverride = JSON.parse(JSON.stringify(example));
+emptyChannelOverride.allowed_channels_by_action = {
+  modify_booking: []
+};
+const validEmptyOverride = validate(emptyChannelOverride);
+if (validEmptyOverride) {
+  console.log('PASS: Empty array in allowed_channels_by_action accepted (blocks action via channels).');
+} else {
+  for (const error of validate.errors) {
+    console.error('FAIL:', error.instancePath, error.message);
+  }
+  failed = true;
+}
+
 if (failed) {
   process.exit(1);
 }
