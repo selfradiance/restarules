@@ -7602,9 +7602,9 @@
     "sdk/schema.json"(exports, module) {
       module.exports = {
         $schema: "https://json-schema.org/draft/2020-12/schema",
-        $id: "https://restarules.org/schema/v0.1/agent-venue-rules.schema.json",
+        $id: "https://restarules.org/schema/v0.3/agent-venue-rules.schema.json",
         title: "RestaRules Agent Venue Rules",
-        description: "Machine-readable conduct and consent rules for AI agent interactions with a restaurant venue. Schema v0.1.",
+        description: "Machine-readable conduct and consent rules for AI agent interactions with a restaurant venue. Schema v0.3.",
         type: "object",
         required: [
           "schema_version",
@@ -7621,7 +7621,7 @@
           schema_version: {
             type: "string",
             description: "Version of the RestaRules schema this file conforms to.",
-            enum: ["0.1", "0.2"]
+            enum: ["0.1", "0.2", "0.3"]
           },
           venue_name: {
             type: "string",
@@ -7676,6 +7676,45 @@
             minItems: 1,
             uniqueItems: true
           },
+          allowed_channels_by_action: {
+            type: "object",
+            description: "Per-action channel overrides. When a key is present for an action, it completely replaces base allowed_channels for that action. When absent, base allowed_channels applies.",
+            additionalProperties: false,
+            properties: {
+              check_availability: {
+                type: "array",
+                items: {
+                  type: "string",
+                  enum: ["phone", "web", "sms", "email", "app"]
+                },
+                uniqueItems: true
+              },
+              create_booking: {
+                type: "array",
+                items: {
+                  type: "string",
+                  enum: ["phone", "web", "sms", "email", "app"]
+                },
+                uniqueItems: true
+              },
+              modify_booking: {
+                type: "array",
+                items: {
+                  type: "string",
+                  enum: ["phone", "web", "sms", "email", "app"]
+                },
+                uniqueItems: true
+              },
+              cancel_booking: {
+                type: "array",
+                items: {
+                  type: "string",
+                  enum: ["phone", "web", "sms", "email", "app"]
+                },
+                uniqueItems: true
+              }
+            }
+          },
           rate_limits: {
             type: "array",
             description: "Rate limits on how frequently a single agent may perform specific actions at this venue.",
@@ -7712,6 +7751,11 @@
                   },
                   uniqueItems: true,
                   description: "Which actions this rate limit applies to. If absent, applies to all actions."
+                },
+                counting_scope: {
+                  type: "string",
+                  description: "Scope for counting rate limit attempts. Defaults to per_agent when absent.",
+                  enum: ["per_agent", "per_user", "per_session"]
                 }
               }
             }
@@ -7889,6 +7933,23 @@
               ]
             },
             uniqueItems: true
+          },
+          booking_window: {
+            type: "object",
+            description: "Constraints on how far ahead or how close to the current time a booking can be made.",
+            additionalProperties: false,
+            properties: {
+              min_hours_ahead: {
+                type: "number",
+                minimum: 0,
+                description: "Minimum lead time in hours before a booking can be made. E.g., 2 means bookings must be at least 2 hours in the future."
+              },
+              max_days_ahead: {
+                type: "number",
+                minimum: 0,
+                description: "Maximum number of days in advance a reservation can be made. E.g., 30 means no bookings more than 30 days out."
+              }
+            }
           }
         },
         $defs: {
@@ -7927,7 +7988,7 @@
   // sdk/evaluator.js
   var require_evaluator = __commonJS({
     "sdk/evaluator.js"(exports, module) {
-      function evaluateCompliance(rules, { channel = null, partySize = null, action = null, attempts = null } = {}) {
+      function evaluateCompliance(rules, { channel = null, partySize = null, action = null, attempts = null, targetTime = null, currentTime = null } = {}) {
         const dp = rules.default_policy;
         const result = {};
         result.disclosure = {
@@ -7935,14 +7996,46 @@
           phrasing: rules.disclosure_required.phrasing || null
         };
         if (channel !== null) {
-          if (rules.allowed_channels.includes(channel)) {
-            result.channel = { result: "ALLOWED" };
+          let effectiveChannels = rules.allowed_channels;
+          let channelSource = "base";
+          if (action !== null && rules.allowed_channels_by_action && action in rules.allowed_channels_by_action) {
+            effectiveChannels = rules.allowed_channels_by_action[action];
+            channelSource = "per_action_override";
+          }
+          if (effectiveChannels.includes(channel)) {
+            result.channel = { result: "ALLOWED", source: channelSource, allowedChannels: effectiveChannels };
           } else {
-            result.channel = { result: "DENIED", allowedChannels: rules.allowed_channels };
+            result.channel = { result: "DENIED", source: channelSource, allowedChannels: effectiveChannels };
           }
         } else {
           result.channel = { result: "NOT_CHECKED", allowedChannels: rules.allowed_channels };
         }
+        if (action !== null && attempts !== null) {
+          if (rules.rate_limits) {
+            const match = rules.rate_limits.find((r) => r.action === action);
+            if (match) {
+              result.rateLimit = {
+                result: attempts >= match.limit ? "EXCEEDED" : "WITHIN_LIMITS",
+                limit: match.limit,
+                windowValue: match.window_value,
+                windowUnit: match.window_unit,
+                appliesTo: match.applies_to || null,
+                countingScope: match.counting_scope || "per_agent"
+              };
+            } else {
+              result.rateLimit = {
+                result: dp === "allow_if_unspecified" ? "WITHIN_LIMITS_DEFAULT_POLICY" : "DENIED_DEFAULT_POLICY"
+              };
+            }
+          } else {
+            result.rateLimit = {
+              result: dp === "allow_if_unspecified" ? "WITHIN_LIMITS_DEFAULT_POLICY" : "DENIED_DEFAULT_POLICY"
+            };
+          }
+        } else {
+          result.rateLimit = { result: "NOT_CHECKED" };
+        }
+        result.escalationConditions = rules.human_escalation_required ? rules.human_escalation_required.conditions : [];
         if (partySize !== null) {
           if (rules.party_size_policy) {
             const autoMax = rules.party_size_policy.auto_book_max;
@@ -7962,30 +8055,46 @@
             autoMax: rules.party_size_policy ? rules.party_size_policy.auto_book_max : null
           };
         }
-        result.escalationConditions = rules.human_escalation_required ? rules.human_escalation_required.conditions : [];
-        if (action !== null && attempts !== null) {
-          if (rules.rate_limits) {
-            const match = rules.rate_limits.find((r) => r.action === action);
-            if (match) {
-              result.rateLimit = {
-                result: attempts >= match.limit ? "EXCEEDED" : "WITHIN_LIMITS",
-                limit: match.limit,
-                windowValue: match.window_value,
-                windowUnit: match.window_unit,
-                appliesTo: match.applies_to || null
-              };
-            } else {
-              result.rateLimit = {
-                result: dp === "allow_if_unspecified" ? "WITHIN_LIMITS_DEFAULT_POLICY" : "DENIED_DEFAULT_POLICY"
-              };
-            }
-          } else {
-            result.rateLimit = {
-              result: dp === "allow_if_unspecified" ? "WITHIN_LIMITS_DEFAULT_POLICY" : "DENIED_DEFAULT_POLICY"
-            };
-          }
+        if (rules.deposit_policy) {
+          result.depositPolicy = {
+            defined: true,
+            required: rules.deposit_policy.required,
+            amount: rules.deposit_policy.amount || null,
+            currency: rules.deposit_policy.currency || null,
+            refundable: rules.deposit_policy.refundable !== void 0 ? rules.deposit_policy.refundable : null
+          };
         } else {
-          result.rateLimit = { result: "NOT_CHECKED" };
+          result.depositPolicy = {
+            defined: false,
+            defaultPolicyResult: dp === "allow_if_unspecified" ? "ALLOWED" : "DENIED_DEFAULT_POLICY"
+          };
+        }
+        if (rules.user_acknowledgment_requirements) {
+          const policyFieldMap = {
+            deposit_policy: "deposit_policy",
+            cancellation_policy: "cancellation_policy",
+            no_show_policy: "no_show_policy"
+          };
+          const activePolicies = [];
+          const skippedPolicies = [];
+          for (const policyName of rules.user_acknowledgment_requirements) {
+            const fieldKey = policyFieldMap[policyName] || policyName;
+            if (rules[fieldKey] !== void 0) {
+              activePolicies.push(policyName);
+            } else {
+              skippedPolicies.push(policyName);
+            }
+          }
+          result.userAcknowledgmentRequirements = {
+            defined: true,
+            policies: activePolicies,
+            skippedPolicies: skippedPolicies.length > 0 ? skippedPolicies : null
+          };
+        } else {
+          result.userAcknowledgmentRequirements = {
+            defined: false,
+            defaultPolicyResult: dp === "allow_if_unspecified" ? "ALLOWED" : "DENIED_DEFAULT_POLICY"
+          };
         }
         if (rules.third_party_restrictions) {
           const tpr = rules.third_party_restrictions;
@@ -8006,31 +8115,6 @@
           currency: rules.venue_currency || null,
           timezone: rules.venue_timezone || null
         };
-        if (rules.deposit_policy) {
-          result.depositPolicy = {
-            defined: true,
-            required: rules.deposit_policy.required,
-            amount: rules.deposit_policy.amount || null,
-            currency: rules.deposit_policy.currency || null,
-            refundable: rules.deposit_policy.refundable !== void 0 ? rules.deposit_policy.refundable : null
-          };
-        } else {
-          result.depositPolicy = {
-            defined: false,
-            defaultPolicyResult: dp === "allow_if_unspecified" ? "ALLOWED" : "DENIED_DEFAULT_POLICY"
-          };
-        }
-        if (rules.user_acknowledgment_requirements) {
-          result.userAcknowledgmentRequirements = {
-            defined: true,
-            policies: rules.user_acknowledgment_requirements
-          };
-        } else {
-          result.userAcknowledgmentRequirements = {
-            defined: false,
-            defaultPolicyResult: dp === "allow_if_unspecified" ? "ALLOWED" : "DENIED_DEFAULT_POLICY"
-          };
-        }
         if (rules.cancellation_policy) {
           result.cancellationPolicy = {
             defined: true,
@@ -8051,6 +8135,46 @@
           };
         } else {
           result.noShowPolicy = { defined: false };
+        }
+        if (rules.booking_window) {
+          const bw = rules.booking_window;
+          const hasTimezone = !!rules.venue_timezone;
+          const canEvaluate = action === "create_booking" && targetTime !== null && hasTimezone;
+          if (canEvaluate) {
+            const now = currentTime ? new Date(currentTime) : /* @__PURE__ */ new Date();
+            const target = new Date(targetTime);
+            const diffMs = target.getTime() - now.getTime();
+            const diffHours = diffMs / (1e3 * 60 * 60);
+            const diffDays = diffMs / (1e3 * 60 * 60 * 24);
+            let windowResult = "ALLOWED";
+            let reason = null;
+            if (bw.min_hours_ahead !== void 0 && diffHours < bw.min_hours_ahead) {
+              windowResult = "DENIED";
+              reason = `Booking is ${diffHours.toFixed(1)} hours ahead, minimum is ${bw.min_hours_ahead}`;
+            } else if (bw.max_days_ahead !== void 0 && diffDays > bw.max_days_ahead) {
+              windowResult = "DENIED";
+              reason = `Booking is ${diffDays.toFixed(1)} days ahead, maximum is ${bw.max_days_ahead}`;
+            }
+            result.bookingWindow = {
+              defined: true,
+              enforced: true,
+              result: windowResult,
+              reason,
+              minHoursAhead: bw.min_hours_ahead !== void 0 ? bw.min_hours_ahead : null,
+              maxDaysAhead: bw.max_days_ahead !== void 0 ? bw.max_days_ahead : null
+            };
+          } else {
+            result.bookingWindow = {
+              defined: true,
+              enforced: false,
+              result: "NOT_EVALUATED",
+              reason: !hasTimezone ? "venue_timezone absent \u2014 informational only" : null,
+              minHoursAhead: bw.min_hours_ahead !== void 0 ? bw.min_hours_ahead : null,
+              maxDaysAhead: bw.max_days_ahead !== void 0 ? bw.max_days_ahead : null
+            };
+          }
+        } else {
+          result.bookingWindow = { defined: false };
         }
         return result;
       }
