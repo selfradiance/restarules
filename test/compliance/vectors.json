@@ -1,0 +1,392 @@
+[
+  {
+    "id": "V01",
+    "description": "Unrecognized schema_version fails schema validation (agent MUST NOT proceed)",
+    "step": 1,
+    "check": "schema_validation",
+    "input": {
+      "rules": {
+        "schema_version": "99.0",
+        "venue_name": "Test Venue",
+        "venue_url": "https://test.example.com",
+        "last_updated": "2026-03-14",
+        "effective_at": "2026-03-14",
+        "default_policy": "deny_if_unspecified",
+        "disclosure_required": { "enabled": false },
+        "allowed_channels": ["phone"]
+      }
+    },
+    "expected": {
+      "permitted": false,
+      "reason": "schema_validation_failure"
+    }
+  },
+  {
+    "id": "V02",
+    "description": "Agent uses channel not in allowed_channels — denied at Step 3",
+    "step": 3,
+    "check": "channel",
+    "input": {
+      "rules": {
+        "schema_version": "0.3",
+        "venue_name": "Test Venue",
+        "venue_url": "https://test.example.com",
+        "last_updated": "2026-03-14",
+        "effective_at": "2026-03-14",
+        "default_policy": "deny_if_unspecified",
+        "disclosure_required": { "enabled": false },
+        "allowed_channels": ["phone", "web"]
+      },
+      "params": { "channel": "sms" }
+    },
+    "expected": {
+      "permitted": false,
+      "reason": "channel_not_allowed"
+    }
+  },
+  {
+    "id": "V03",
+    "description": "Agent uses channel in allowed_channels — passes Step 3",
+    "step": 3,
+    "check": "channel",
+    "input": {
+      "rules": {
+        "schema_version": "0.3",
+        "venue_name": "Test Venue",
+        "venue_url": "https://test.example.com",
+        "last_updated": "2026-03-14",
+        "effective_at": "2026-03-14",
+        "default_policy": "deny_if_unspecified",
+        "disclosure_required": { "enabled": false },
+        "allowed_channels": ["phone", "web"]
+      },
+      "params": { "channel": "phone" }
+    },
+    "expected": {
+      "permitted": true,
+      "reason": "channel_allowed"
+    }
+  },
+  {
+    "id": "V04",
+    "description": "Channel allowed in base but denied by per-action override — denied at Step 3",
+    "step": 3,
+    "check": "channel",
+    "input": {
+      "rules": {
+        "schema_version": "0.3",
+        "venue_name": "Test Venue",
+        "venue_url": "https://test.example.com",
+        "last_updated": "2026-03-14",
+        "effective_at": "2026-03-14",
+        "default_policy": "deny_if_unspecified",
+        "disclosure_required": { "enabled": false },
+        "allowed_channels": ["phone", "web"],
+        "allowed_channels_by_action": {
+          "create_booking": ["web"]
+        }
+      },
+      "params": { "channel": "phone", "action": "create_booking" }
+    },
+    "expected": {
+      "permitted": false,
+      "reason": "channel_not_allowed"
+    }
+  },
+  {
+    "id": "V05",
+    "description": "Channel allowed by per-action override (not in base) — passes Step 3",
+    "step": 3,
+    "check": "channel",
+    "input": {
+      "rules": {
+        "schema_version": "0.3",
+        "venue_name": "Test Venue",
+        "venue_url": "https://test.example.com",
+        "last_updated": "2026-03-14",
+        "effective_at": "2026-03-14",
+        "default_policy": "deny_if_unspecified",
+        "disclosure_required": { "enabled": false },
+        "allowed_channels": ["phone", "web"],
+        "allowed_channels_by_action": {
+          "create_booking": ["web", "app"]
+        }
+      },
+      "params": { "channel": "app", "action": "create_booking" }
+    },
+    "expected": {
+      "permitted": true,
+      "reason": "channel_allowed"
+    }
+  },
+  {
+    "id": "V06",
+    "description": "Party size exceeds auto_book_max — escalate at Step 6",
+    "step": 6,
+    "check": "party_size",
+    "input": {
+      "rules": {
+        "schema_version": "0.3",
+        "venue_name": "Test Venue",
+        "venue_url": "https://test.example.com",
+        "last_updated": "2026-03-14",
+        "effective_at": "2026-03-14",
+        "default_policy": "deny_if_unspecified",
+        "disclosure_required": { "enabled": false },
+        "allowed_channels": ["phone"],
+        "party_size_policy": { "auto_book_max": 4 }
+      },
+      "params": { "partySize": 6 }
+    },
+    "expected": {
+      "permitted": false,
+      "reason": "party_size_exceeds_auto_book_max"
+    }
+  },
+  {
+    "id": "V07",
+    "description": "Party size within auto_book_max — passes Step 6",
+    "step": 6,
+    "check": "party_size",
+    "input": {
+      "rules": {
+        "schema_version": "0.3",
+        "venue_name": "Test Venue",
+        "venue_url": "https://test.example.com",
+        "last_updated": "2026-03-14",
+        "effective_at": "2026-03-14",
+        "default_policy": "deny_if_unspecified",
+        "disclosure_required": { "enabled": false },
+        "allowed_channels": ["phone"],
+        "party_size_policy": { "auto_book_max": 4 }
+      },
+      "params": { "partySize": 3 }
+    },
+    "expected": {
+      "permitted": true,
+      "reason": "party_size_within_limit"
+    }
+  },
+  {
+    "id": "V08",
+    "description": "Booking target_time before min_hours_ahead — denied at Step 7",
+    "step": 7,
+    "check": "booking_window",
+    "input": {
+      "rules": {
+        "schema_version": "0.3",
+        "venue_name": "Test Venue",
+        "venue_url": "https://test.example.com",
+        "last_updated": "2026-03-14",
+        "effective_at": "2026-03-14",
+        "default_policy": "deny_if_unspecified",
+        "disclosure_required": { "enabled": false },
+        "allowed_channels": ["phone"],
+        "venue_timezone": "America/New_York",
+        "booking_window": { "min_hours_ahead": 2, "max_days_ahead": 30 }
+      },
+      "params": {
+        "action": "create_booking",
+        "targetTime": "2026-03-14T12:30:00-05:00",
+        "currentTime": "2026-03-14T12:00:00-05:00"
+      }
+    },
+    "expected": {
+      "permitted": false,
+      "reason": "booking_too_soon"
+    }
+  },
+  {
+    "id": "V09",
+    "description": "Booking target_time beyond max_days_ahead — denied at Step 7",
+    "step": 7,
+    "check": "booking_window",
+    "input": {
+      "rules": {
+        "schema_version": "0.3",
+        "venue_name": "Test Venue",
+        "venue_url": "https://test.example.com",
+        "last_updated": "2026-03-14",
+        "effective_at": "2026-03-14",
+        "default_policy": "deny_if_unspecified",
+        "disclosure_required": { "enabled": false },
+        "allowed_channels": ["phone"],
+        "venue_timezone": "America/New_York",
+        "booking_window": { "min_hours_ahead": 2, "max_days_ahead": 30 }
+      },
+      "params": {
+        "action": "create_booking",
+        "targetTime": "2026-05-15T18:00:00-05:00",
+        "currentTime": "2026-03-14T12:00:00-05:00"
+      }
+    },
+    "expected": {
+      "permitted": false,
+      "reason": "booking_too_far_ahead"
+    }
+  },
+  {
+    "id": "V10",
+    "description": "Booking window present but no venue_timezone — not evaluated (informational only)",
+    "step": 7,
+    "check": "booking_window",
+    "input": {
+      "rules": {
+        "schema_version": "0.3",
+        "venue_name": "Test Venue",
+        "venue_url": "https://test.example.com",
+        "last_updated": "2026-03-14",
+        "effective_at": "2026-03-14",
+        "default_policy": "deny_if_unspecified",
+        "disclosure_required": { "enabled": false },
+        "allowed_channels": ["phone"],
+        "booking_window": { "min_hours_ahead": 2, "max_days_ahead": 30 }
+      },
+      "params": {
+        "action": "create_booking",
+        "targetTime": "2026-03-14T12:30:00Z",
+        "currentTime": "2026-03-14T12:00:00Z"
+      }
+    },
+    "expected": {
+      "permitted": "not_evaluated",
+      "reason": "venue_timezone_absent"
+    }
+  },
+  {
+    "id": "V11",
+    "description": "Deposit required with user acknowledgment required — agent must inform user before proceeding",
+    "step": 8,
+    "check": "deposit_policy",
+    "input": {
+      "rules": {
+        "schema_version": "0.3",
+        "venue_name": "Test Venue",
+        "venue_url": "https://test.example.com",
+        "last_updated": "2026-03-14",
+        "effective_at": "2026-03-14",
+        "default_policy": "deny_if_unspecified",
+        "disclosure_required": { "enabled": false },
+        "allowed_channels": ["phone"],
+        "deposit_policy": { "required": true, "amount": 50, "currency": "USD", "refundable": false },
+        "user_acknowledgment_requirements": ["deposit_policy"]
+      },
+      "params": {}
+    },
+    "expected": {
+      "permitted": true,
+      "reason": "deposit_required_acknowledgment_needed",
+      "deposit": { "required": true, "amount": 50 }
+    }
+  },
+  {
+    "id": "V12",
+    "description": "Absent permission field with deny_if_unspecified — denied by default policy",
+    "step": 10,
+    "check": "default_policy",
+    "input": {
+      "rules": {
+        "schema_version": "0.3",
+        "venue_name": "Test Venue",
+        "venue_url": "https://test.example.com",
+        "last_updated": "2026-03-14",
+        "effective_at": "2026-03-14",
+        "default_policy": "deny_if_unspecified",
+        "disclosure_required": { "enabled": false },
+        "allowed_channels": ["phone"]
+      },
+      "absent_field": "deposit_policy",
+      "params": {}
+    },
+    "expected": {
+      "permitted": false,
+      "reason": "default_policy_deny"
+    }
+  },
+  {
+    "id": "V13",
+    "description": "Absent permission field with allow_if_unspecified — permitted by default policy",
+    "step": 10,
+    "check": "default_policy",
+    "input": {
+      "rules": {
+        "schema_version": "0.3",
+        "venue_name": "Test Venue",
+        "venue_url": "https://test.example.com",
+        "last_updated": "2026-03-14",
+        "effective_at": "2026-03-14",
+        "default_policy": "allow_if_unspecified",
+        "disclosure_required": { "enabled": false },
+        "allowed_channels": ["phone"]
+      },
+      "absent_field": "deposit_policy",
+      "params": {}
+    },
+    "expected": {
+      "permitted": true,
+      "reason": "default_policy_allow"
+    }
+  },
+  {
+    "id": "V14",
+    "description": "Large party on phone denied when per-action override restricts create_booking to web only",
+    "step": 3,
+    "check": "channel",
+    "input": {
+      "rules": {
+        "schema_version": "0.3",
+        "venue_name": "Test Venue",
+        "venue_url": "https://test.example.com",
+        "last_updated": "2026-03-14",
+        "effective_at": "2026-03-14",
+        "default_policy": "deny_if_unspecified",
+        "disclosure_required": { "enabled": false },
+        "allowed_channels": ["phone", "web"],
+        "allowed_channels_by_action": {
+          "create_booking": ["web"]
+        },
+        "party_size_policy": {
+          "auto_book_max": 4,
+          "large_party_channels": ["phone"]
+        }
+      },
+      "params": { "channel": "phone", "action": "create_booking", "partySize": 6 }
+    },
+    "expected": {
+      "permitted": false,
+      "reason": "channel_not_allowed"
+    }
+  },
+  {
+    "id": "V15",
+    "description": "All checks pass — booking permitted on allowed channel with valid party size",
+    "step": null,
+    "check": "all_pass",
+    "input": {
+      "rules": {
+        "schema_version": "0.3",
+        "venue_name": "Test Venue",
+        "venue_url": "https://test.example.com",
+        "last_updated": "2026-03-14",
+        "effective_at": "2026-03-14",
+        "default_policy": "allow_if_unspecified",
+        "disclosure_required": { "enabled": false },
+        "allowed_channels": ["phone", "web"],
+        "party_size_policy": { "auto_book_max": 6 },
+        "venue_timezone": "America/New_York",
+        "booking_window": { "min_hours_ahead": 2, "max_days_ahead": 30 }
+      },
+      "params": {
+        "channel": "phone",
+        "partySize": 4,
+        "action": "create_booking",
+        "targetTime": "2026-03-14T20:00:00-05:00",
+        "currentTime": "2026-03-14T12:00:00-05:00"
+      }
+    },
+    "expected": {
+      "permitted": true,
+      "reason": "all_checks_passed"
+    }
+  }
+]
