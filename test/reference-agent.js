@@ -215,5 +215,50 @@ assert(
   t23.userAcknowledgmentRequirements.skippedPolicies[0] === "deposit_policy"
 );
 
+// Test 24: timezone absent + booking window present → informational only, no denial
+const noTzWindowRules = {
+  schema_version: "0.3",
+  venue_name: "No-TZ Window Bistro",
+  venue_url: "https://no-tz-window.example.com",
+  last_updated: "2026-03-10",
+  effective_at: "2026-03-10",
+  default_policy: "deny_if_unspecified",
+  disclosure_required: { enabled: false },
+  allowed_channels: ["phone"],
+  booking_window: { min_hours_ahead: 2, max_days_ahead: 30 }
+  // venue_timezone intentionally absent
+};
+const t24 = evaluateCompliance(noTzWindowRules, {
+  action: "create_booking",
+  targetTime: "2026-03-10T12:30:00Z",
+  currentTime: "2026-03-10T12:00:00Z",
+});
+assert(
+  "timezone absent + booking window → NOT_EVALUATED (informational only)",
+  t24.bookingWindow.defined === true && t24.bookingWindow.enforced === false && t24.bookingWindow.result === "NOT_EVALUATED"
+);
+
+// Test 25: absent booking window + deny_if_unspecified → no denial (carve-out)
+const t25 = evaluateCompliance(rules, {
+  action: "create_booking",
+  targetTime: "2026-06-01T12:00:00Z",
+  currentTime: "2026-03-10T12:00:00Z",
+});
+assert(
+  "absent booking window + deny_if_unspecified → no denial (carve-out)",
+  t25.bookingWindow.defined === false
+);
+
+// Test 26: booking too far out denied (60 days ahead, max is 30)
+const t26 = evaluateCompliance(bookingWindowRules, {
+  action: "create_booking",
+  targetTime: "2026-05-15T12:00:00Z",
+  currentTime: "2026-03-13T12:00:00Z",
+});
+assert(
+  "booking too far out denied (63 days ahead, max is 30)",
+  t26.bookingWindow.defined === true && t26.bookingWindow.enforced === true && t26.bookingWindow.result === "DENIED"
+);
+
 console.log(`\nReference agent tests: ${passed} passed, ${failed} failed.`);
 if (failed > 0) process.exit(1);

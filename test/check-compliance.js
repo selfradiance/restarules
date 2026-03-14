@@ -490,4 +490,48 @@ try {
   process.exit(1);
 }
 
+// Test 24: timezone absent + booking window present → informational only, no denial
+try {
+  const noTzWindowRules = path.join(__dirname, "fixtures", "test-venue-with-booking-window-no-tz.json");
+  const cmd = `node ${cliPath} --rules ${noTzWindowRules} --channel phone --disclosed true --action create_booking --target-time 2026-03-10T12:30:00Z`;
+  const output = execSync(cmd, { encoding: "utf8" });
+  if (output.includes("ALLOW") || !output.includes("booking_window.min_hours_ahead")) {
+    console.log(
+      "PASS: timezone absent + booking window → no denial (informational only)"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected no booking window denial when venue_timezone is absent"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on timezone-absent booking window test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
+// Test 25: absent booking window + deny_if_unspecified → no denial (carve-out)
+try {
+  const noWindowRules = path.join(__dirname, "fixtures", "test-venue-rules.json");
+  const cmd = `node ${cliPath} --rules ${noWindowRules} --channel phone --disclosed true --action create_booking --target-time 2026-06-01T12:00:00Z`;
+  const output = execSync(cmd, { encoding: "utf8" });
+  if (!output.includes("booking_window")) {
+    console.log(
+      "PASS: absent booking window + deny_if_unspecified → no booking window denial (carve-out)"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected no booking_window mention when field is absent"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on absent booking window carve-out test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
 console.log("\nAll compliance checker tests passed.");

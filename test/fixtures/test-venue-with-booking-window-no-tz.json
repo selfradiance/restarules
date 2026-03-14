@@ -1,0 +1,17 @@
+{
+  "schema_version": "0.3",
+  "venue_name": "No-TZ Window Bistro",
+  "venue_url": "https://no-tz-window.example.com",
+  "last_updated": "2026-03-10",
+  "effective_at": "2026-03-10",
+  "default_policy": "deny_if_unspecified",
+  "disclosure_required": {
+    "enabled": true,
+    "phrasing": "I am an AI assistant calling on behalf of a guest."
+  },
+  "allowed_channels": ["phone", "web"],
+  "booking_window": {
+    "min_hours_ahead": 2,
+    "max_days_ahead": 30
+  }
+}
