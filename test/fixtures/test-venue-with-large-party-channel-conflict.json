@@ -1,0 +1,17 @@
+{
+  "schema_version": "0.3",
+  "venue_name": "Large Party Channel Conflict Bistro",
+  "venue_url": "https://lp-conflict.example.com",
+  "last_updated": "2026-03-14",
+  "effective_at": "2026-03-14",
+  "default_policy": "deny_if_unspecified",
+  "disclosure_required": { "enabled": false },
+  "allowed_channels": ["phone", "web"],
+  "allowed_channels_by_action": {
+    "create_booking": ["web"]
+  },
+  "party_size_policy": {
+    "auto_book_max": 4,
+    "large_party_channels": ["phone"]
+  }
+}

@@ -284,5 +284,14 @@ assert(
   t27.bookingWindow.result === "NOT_EVALUATED" && t27.bookingWindow.reason.includes("Contradictory")
 );
 
+// Test 28: large_party_channels does not override per-action channel restriction
+const lpConflictRules = require("./fixtures/test-venue-with-large-party-channel-conflict.json");
+const t28 = evaluateCompliance(lpConflictRules, { channel: "phone", action: "create_booking", partySize: 6 });
+assert(
+  "large_party_channels phone denied when per-action override restricts create_booking to web only",
+  t28.channel.result === "DENIED" && t28.channel.source === "per_action_override" &&
+  t28.partySize.result === "ESCALATE_TO_HUMAN"
+);
+
 console.log(`\nReference agent tests: ${passed} passed, ${failed} failed.`);
 if (failed > 0) process.exit(1);

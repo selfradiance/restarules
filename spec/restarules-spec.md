@@ -529,7 +529,7 @@ This section defines the algorithm an agent MUST follow when processing a RestaR
 
 **Step 6: Check `party_size_policy`.** If `party_size_policy` is present and the requested party size exceeds `auto_book_max`, the agent MUST escalate to a human and deny the automated booking. If `large_party_channels` is provided, the agent SHOULD direct the inquiry through one of the listed channels. If absent, apply `default_policy`.
 
-Note: If `large_party_channels` specifies channels that differ from `allowed_channels`, the `allowed_channels` check in Step 3 takes precedence. An agent MUST NOT use a channel that is not listed in `allowed_channels`, even if `large_party_channels` suggests it.
+Note: If `large_party_channels` specifies channels not in the effective channel list, the channel determination from Steps 3–4 takes precedence. An agent MUST NOT use a channel that was not permitted by the effective channel list (whether determined by base `allowed_channels` in Step 3 or overridden by `allowed_channels_by_action` in Step 4), even if `large_party_channels` suggests it.
 
 **Step 7: Check `booking_window`.** If the action is `create_booking` and `booking_window` is present:
 
