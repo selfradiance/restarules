@@ -6,6 +6,6 @@
  * SDK share the same evaluateCompliance function.
  */
 
-const { evaluateCompliance } = require('../sdk/evaluator');
+const { evaluateCompliance, getAggregateVerdict } = require('../sdk/evaluator');
 
-module.exports = { evaluateCompliance };
+module.exports = { evaluateCompliance, getAggregateVerdict };

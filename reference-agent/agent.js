@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { evaluateCompliance } = require("./decisions");
+const { evaluateCompliance, getAggregateVerdict } = require("./decisions");
 const { validateRules } = require("../sdk/validator");
 
 // Parse arguments: first positional arg is URL, remaining are --flag value pairs
@@ -212,4 +212,18 @@ const hasFlags = channel || partySize !== null || action || attempts !== null;
   } else {
     console.log(`6. Complaint endpoint: not defined`);
   }
+
+  // --- Aggregate verdict ---
+  console.log();
+  console.log("--- AGGREGATE VERDICT ---");
+  const { verdict, reasons } = getAggregateVerdict(report);
+  console.log(`VERDICT: ${verdict}`);
+  for (const reason of reasons) {
+    console.log(`REASON: ${reason}`);
+  }
+
+  // Exit code: 0=ALLOW, 1=DENY, 2=INVALID
+  if (verdict === "ALLOW") process.exitCode = 0;
+  else if (verdict === "DENY") process.exitCode = 1;
+  else process.exitCode = 2;
 })();

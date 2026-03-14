@@ -1,4 +1,4 @@
-const { evaluateCompliance } = require("../reference-agent/decisions");
+const { evaluateCompliance, getAggregateVerdict } = require("../reference-agent/decisions");
 const rules = require("./fixtures/test-venue-rules.json");
 
 let passed = 0;
@@ -409,6 +409,30 @@ assert(
   t41.partySize.result === "ALLOWED" &&
   t41.partySize.humanReviewRecommended === undefined &&
   t41.partySize.largePartyChannels === undefined
+);
+
+// Test 42: getAggregateVerdict — all-ALLOW returns ALLOW
+const t42Report = evaluateCompliance(goldenFork, { channel: "phone", partySize: 4 });
+const t42v = getAggregateVerdict(t42Report);
+assert(
+  "aggregate verdict ALLOW for all-pass scenario",
+  t42v.verdict === "ALLOW" && t42v.reasons.length === 0
+);
+
+// Test 43: getAggregateVerdict — channel DENY returns DENY
+const t43Report = evaluateCompliance(goldenFork, { channel: "sms" });
+const t43v = getAggregateVerdict(t43Report);
+assert(
+  "aggregate verdict DENY for denied channel",
+  t43v.verdict === "DENY" && t43v.reasons.length > 0
+);
+
+// Test 44: getAggregateVerdict — INVALID_INPUT returns INVALID
+const t44Report = evaluateCompliance(goldenFork, { partySize: NaN });
+const t44v = getAggregateVerdict(t44Report);
+assert(
+  "aggregate verdict INVALID for invalid input",
+  t44v.verdict === "INVALID" && t44v.reasons.length > 0
 );
 
 // ============================================================

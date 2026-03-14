@@ -493,6 +493,74 @@ assert.strictEqual(r6.partySize.channelWarning, undefined, "no channel warning w
 console.log("PASS: R6 — no channel warning when large party on correct channel");
 
 // ============================================================
+// Category S: Aggregate Verdict (getAggregateVerdict)
+// ============================================================
+
+// S1: All-ALLOW scenario returns ALLOW with no reasons
+const s1Report = sdk.evaluateCompliance(fullVenue, { channel: "phone", partySize: 4 });
+const s1 = sdk.getAggregateVerdict(s1Report);
+assert.strictEqual(s1.verdict, "ALLOW", "all-pass scenario should return ALLOW");
+assert.strictEqual(s1.reasons.length, 0, "no reasons for ALLOW");
+console.log("PASS: S1 — all-ALLOW scenario returns ALLOW with no reasons");
+
+// S2: Channel DENY produces DENY verdict
+const s2Report = sdk.evaluateCompliance(fullVenue, { channel: "sms" });
+const s2 = sdk.getAggregateVerdict(s2Report);
+assert.strictEqual(s2.verdict, "DENY", "denied channel should produce DENY");
+assert.ok(s2.reasons.length > 0, "should have reasons");
+assert.ok(s2.reasons[0].includes("allowed_channels"), "reason should mention channels");
+console.log("PASS: S2 — channel DENY produces DENY verdict");
+
+// S3: Rate limit EXCEEDED produces DENY verdict
+const s3Report = sdk.evaluateCompliance(fullVenue, { action: "booking_request", attempts: 5 });
+const s3 = sdk.getAggregateVerdict(s3Report);
+assert.strictEqual(s3.verdict, "DENY", "exceeded rate limit should produce DENY");
+assert.ok(s3.reasons.some(r => r.includes("Rate limit exceeded")), "reason should mention rate limit");
+console.log("PASS: S3 — rate limit EXCEEDED produces DENY verdict");
+
+// S4: Party size ESCALATE_TO_HUMAN produces DENY verdict
+const s4Report = sdk.evaluateCompliance(fullVenue, { partySize: 8 });
+const s4 = sdk.getAggregateVerdict(s4Report);
+assert.strictEqual(s4.verdict, "DENY", "escalated party size should produce DENY");
+assert.ok(s4.reasons.some(r => r.includes("auto_book_max")), "reason should mention auto_book_max");
+console.log("PASS: S4 — party size ESCALATE_TO_HUMAN produces DENY verdict");
+
+// S5: INVALID_INPUT produces INVALID verdict
+const s5Report = sdk.evaluateCompliance(fullVenue, { partySize: NaN });
+const s5 = sdk.getAggregateVerdict(s5Report);
+assert.strictEqual(s5.verdict, "INVALID", "invalid input should produce INVALID");
+assert.ok(s5.reasons.some(r => r.includes("partySize")), "reason should mention partySize");
+console.log("PASS: S5 — INVALID_INPUT produces INVALID verdict");
+
+// S6: NOT_CHECKED and NOT_EVALUATED fields do not block
+const s6Report = sdk.evaluateCompliance(minimalVenue, { channel: "phone" });
+const s6 = sdk.getAggregateVerdict(s6Report);
+assert.strictEqual(s6.verdict, "ALLOW", "NOT_CHECKED fields should not block ALLOW");
+console.log("PASS: S6 — NOT_CHECKED and NOT_EVALUATED fields do not block ALLOW");
+
+// S7: Booking window DENIED produces DENY verdict
+const s7Report = sdk.evaluateCompliance(bookingWindowVenue, {
+  action: "create_booking",
+  targetTime: "2026-03-13T12:30:00Z",
+  currentTime: "2026-03-13T12:00:00Z",
+});
+const s7 = sdk.getAggregateVerdict(s7Report);
+assert.strictEqual(s7.verdict, "DENY", "booking window violation should produce DENY");
+assert.ok(s7.reasons.some(r => r.includes("hours ahead")), "reason should describe the violation");
+console.log("PASS: S7 — booking window DENIED produces DENY verdict");
+
+// S8: Default policy DENIED_DEFAULT_POLICY produces DENY
+const denyDefaultReport = sdk.evaluateCompliance(JSON.parse(JSON.stringify(Object.assign({}, minimalVenue, { default_policy: "deny_if_unspecified" }))), { channel: "phone" });
+const s8 = sdk.getAggregateVerdict(denyDefaultReport);
+assert.strictEqual(s8.verdict, "DENY", "deny_if_unspecified with absent fields should produce DENY");
+assert.ok(s8.reasons.length > 0, "should have reasons for default policy denial");
+console.log("PASS: S8 — DENIED_DEFAULT_POLICY produces DENY verdict");
+
+// S9: getAggregateVerdict is exported from SDK entry point
+assert.strictEqual(typeof sdk.getAggregateVerdict, "function", "getAggregateVerdict should be exported");
+console.log("PASS: S9 — getAggregateVerdict exported from SDK");
+
+// ============================================================
 // Category N: Schema Sync Verification
 // ============================================================
 
@@ -504,4 +572,4 @@ const sdkSchema = fs.readFileSync(path.join(__dirname, "..", "sdk", "schema.json
 assert.strictEqual(sdkSchema, canonicalSchema, "sdk/schema.json must match schema/agent-venue-rules.schema.json");
 console.log("PASS: N1 — sdk/schema.json matches the canonical schema file");
 
-console.log("\nSDK tests: 53 passed, 0 failed.");
+console.log("\nSDK tests: 62 passed, 0 failed.");

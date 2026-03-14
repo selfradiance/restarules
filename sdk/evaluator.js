@@ -361,4 +361,67 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
   return result;
 }
 
-module.exports = { evaluateCompliance };
+/**
+ * Compute an aggregate allow/deny verdict from a compliance report.
+ * Returns { verdict: "ALLOW"|"DENY"|"INVALID", reasons: string[] }.
+ */
+function getAggregateVerdict(report) {
+  // Invalid input takes precedence
+  if (report.inputError) {
+    return { verdict: "INVALID", reasons: [report.inputError.reason] };
+  }
+
+  const reasons = [];
+
+  // Channel check
+  if (report.channel && report.channel.result === "DENIED") {
+    reasons.push(`Channel not in allowed_channels [${report.channel.allowedChannels.join(", ")}]`);
+  }
+
+  // Rate limit check
+  if (report.rateLimit) {
+    if (report.rateLimit.result === "EXCEEDED") {
+      reasons.push(`Rate limit exceeded: ${report.rateLimit.limit} per ${report.rateLimit.windowValue} ${report.rateLimit.windowUnit}`);
+    } else if (report.rateLimit.result === "DENIED_DEFAULT_POLICY") {
+      reasons.push("Rate limit denied by default policy");
+    }
+  }
+
+  // Party size check
+  if (report.partySize) {
+    if (report.partySize.result === "ESCALATE_TO_HUMAN") {
+      reasons.push(`Party size exceeds auto_book_max of ${report.partySize.autoMax} — escalation required`);
+    } else if (report.partySize.result === "DENIED_DEFAULT_POLICY") {
+      reasons.push("Party size denied by default policy");
+    }
+  }
+
+  // Third-party restrictions
+  if (report.thirdParty && !report.thirdParty.defined && report.thirdParty.defaultPolicyResult === "DENIED_DEFAULT_POLICY") {
+    reasons.push("Third-party restrictions denied by default policy");
+  }
+
+  // Deposit policy
+  if (report.depositPolicy && !report.depositPolicy.defined && report.depositPolicy.defaultPolicyResult === "DENIED_DEFAULT_POLICY") {
+    reasons.push("Deposit policy denied by default policy");
+  }
+
+  // User acknowledgment requirements
+  if (report.userAcknowledgmentRequirements && !report.userAcknowledgmentRequirements.defined &&
+      report.userAcknowledgmentRequirements.defaultPolicyResult === "DENIED_DEFAULT_POLICY") {
+    reasons.push("User acknowledgment requirements denied by default policy");
+  }
+
+  // Booking window
+  if (report.bookingWindow && report.bookingWindow.result === "DENIED") {
+    reasons.push(report.bookingWindow.reason || "Booking window constraint violated");
+  }
+
+  if (reasons.length > 0) {
+    return { verdict: "DENY", reasons };
+  }
+
+  return { verdict: "ALLOW", reasons: [] };
+}
+
+module.exports = { evaluateCompliance, getAggregateVerdict };
