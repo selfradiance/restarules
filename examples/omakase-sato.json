@@ -1,0 +1,65 @@
+{
+  "schema_version": "0.2",
+  "venue_name": "Omakase Sato",
+  "venue_url": "https://www.omakasesato.example.com",
+  "last_updated": "2026-03-13",
+  "effective_at": "2026-03-13",
+  "default_policy": "deny_if_unspecified",
+  "venue_currency": "USD",
+  "venue_timezone": "America/New_York",
+  "disclosure_required": {
+    "enabled": true,
+    "phrasing": "All AI agents must identify themselves before any interaction with our staff."
+  },
+  "allowed_channels": ["web"],
+  "rate_limits": [
+    {
+      "action": "booking_request",
+      "limit": 2,
+      "window_value": 1,
+      "window_unit": "day"
+    },
+    {
+      "action": "inquiry",
+      "limit": 5,
+      "window_value": 1,
+      "window_unit": "hour"
+    }
+  ],
+  "human_escalation_required": {
+    "conditions": ["reservation_modification"]
+  },
+  "third_party_restrictions": {
+    "no_resale": true,
+    "no_transfer": true,
+    "identity_bound_booking": true
+  },
+  "party_size_policy": {
+    "auto_book_max": 2,
+    "human_review_above": 2,
+    "large_party_channels": ["phone"]
+  },
+  "deposit_policy": {
+    "required": true,
+    "amount": 200,
+    "currency": "USD",
+    "refundable": false
+  },
+  "cancellation_policy": {
+    "penalty_applies": true,
+    "window_minutes": 2880,
+    "penalty_amount": 200,
+    "currency": "USD"
+  },
+  "no_show_policy": {
+    "fee": 200,
+    "currency": "USD",
+    "grace_period_minutes": 10
+  },
+  "user_acknowledgment_requirements": [
+    "deposit_policy",
+    "cancellation_policy",
+    "no_show_policy"
+  ],
+  "complaint_endpoint": "https://www.omakasesato.example.com/agent-issues"
+}
