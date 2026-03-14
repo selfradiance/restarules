@@ -383,7 +383,7 @@ RestaRules is in active development. Current version: **v0.3**.
 - **Reference agent** (`reference-agent/`) — fetches a live rules file, validates it, and evaluates compliance for simulated booking scenarios
 - **Agent SDK** (`sdk/`) — npm-ready library exporting `validateRules` (JSON Schema validation) and `evaluateCompliance` (full decision engine)
 - **Agent Compliance Demo** — live at [selfradiance.github.io/restarules/demo/voice/](https://selfradiance.github.io/restarules/demo/voice/). An agent fetches live venue rules, evaluates compliance, and speaks results aloud using the Web Speech API.
-- **131 tests** across schema validation, CLI compliance, reference agent, SDK, and portable compliance vectors
+- **151 tests** across schema validation (29), CLI compliance (32), reference agent (37), SDK (38), and portable compliance vectors (15)
 - **CI** via GitHub Actions (runs on every push and PR to main)
 
 ## SDK
