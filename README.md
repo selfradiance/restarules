@@ -225,6 +225,10 @@ npm test
 PASS: Example validates against schema.
 ```
 
+### Compliance Test Vectors
+
+The `test/compliance/` directory contains 15 language-agnostic test vectors covering all key paths through the decision procedure. Each vector is a JSON object with input (venue rules + agent action) and expected output (permitted/denied + reason + step). Implementers building RestaRules support in any language can validate against these vectors. See [test/compliance/README.md](test/compliance/README.md) for format and usage.
+
 ## Reference Agent Demo
 
 `reference-agent/agent.js` is a command-line tool that proves the core thesis: an agent can fetch a venue's rules file, validate it against the schema, and change its behavior accordingly — before taking any action.

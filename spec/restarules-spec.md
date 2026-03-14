@@ -641,6 +641,10 @@ A venue conforms to this specification if it meets all of the following requirem
 4. All required fields defined in Section 7 are present and contain valid values.
 5. The venue updates the `last_updated` field whenever the rules file is modified.
 
+### 12.3 Compliance Test Vectors
+
+A suite of portable, language-agnostic compliance test vectors is provided in `test/compliance/vectors.json`. Each vector specifies an input (venue rules + agent action) and the expected decision procedure outcome. Implementers SHOULD validate their decision engines against these vectors to verify conformance. See `test/compliance/README.md` for format documentation.
+
 ## 13. IANA / Registry Considerations
 
 This specification uses the well-known URI mechanism as described in [RFC 8615](https://datatracker.ietf.org/doc/html/rfc8615). The URI suffix used is `agent-venue-rules.json`.
