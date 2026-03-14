@@ -159,6 +159,7 @@ The following fields are optional. Their behavior when absent is governed by the
 | `party_size_policy` | Object | Permission |
 | `deposit_policy` | Object | Permission |
 | `user_acknowledgment_requirements` | Array | Permission |
+| `booking_window` | Object | Permission (with `default_policy` carve-out) |
 | `complaint_endpoint` | String | Informational |
 | `cancellation_policy` | Object | Informational |
 | `no_show_policy` | Object | Informational |
@@ -432,6 +433,29 @@ If a venue has no mechanism for identifying agents or users at the declared scop
 
 **Absence behavior:** Subject to `default_policy`.
 
+#### `booking_window`
+
+**Type:** Object containing `min_hours_ahead` (number, optional) and `max_days_ahead` (number, optional)
+**Required:** No
+**Classification:** Permission (with `default_policy` carve-out — see below)
+
+**Meaning:** Defines time constraints on when a booking can be created. Both sub-fields are optional within the object:
+
+- `min_hours_ahead`: Number (minimum 0). The minimum lead time in hours before a booking can be made. For example, a value of `2` means the booking must be at least 2 hours in the future from the time of the request.
+- `max_days_ahead`: Number (minimum 0). The maximum number of days in advance a reservation can be made. For example, a value of `30` means no bookings more than 30 days out from the time of the request.
+
+**Scope:** Booking window constraints apply exclusively to `create_booking` actions. Agents MUST NOT evaluate or enforce booking window constraints for `check_availability`, `modify_booking`, or `cancel_booking` actions.
+
+**Timezone requirement:** When `venue_timezone` is present in the rules file, agents MUST use venue local time for booking window comparisons. When `venue_timezone` is absent, agents SHOULD treat `booking_window` as informational only — agents SHOULD display the constraints to the user but MUST NOT autonomously deny a booking based on the window. The rationale is that without a timezone, the agent cannot reliably determine the venue's local time, making enforcement unreliable.
+
+**`default_policy` carve-out:** The absence of `booking_window` means "no time restriction on bookings." This holds regardless of `default_policy`. When `booking_window` is not present in the rules file, agents MUST NOT deny `create_booking` actions due to a missing booking window, even when `default_policy` is `"deny_if_unspecified"`. This is an explicit exception to the normal permission field behavior described in Section 8.2. The rationale: applying `deny_if_unspecified` to a missing booking window would accidentally block all bookings for any venue that simply has not defined time constraints — the overwhelming majority of venues have no booking window restrictions, and treating their silence as a denial would be counterproductive.
+
+**Coherence rule:** If both `min_hours_ahead` and `max_days_ahead` are present and mathematically contradictory (e.g., `min_hours_ahead: 1000` with `max_days_ahead: 2`, making it impossible for any booking to satisfy both constraints), agents SHOULD treat the booking window as non-actionable and log a warning. The schema does not enforce cross-field mathematical consistency — this is a behavioral requirement for agents.
+
+**Agent behavior:** When `booking_window` is present and the action is `create_booking`, the agent MUST evaluate the target booking time against the constraints. If `min_hours_ahead` is set and the booking is less than that many hours from the current time, the agent MUST deny the action. If `max_days_ahead` is set and the booking is more than that many days from the current time, the agent MUST deny the action. For actions other than `create_booking`, the agent MUST skip booking window evaluation entirely.
+
+**Absence behavior:** No time restriction. Agents MUST NOT deny actions due to an absent `booking_window`, regardless of `default_policy`. See the `default_policy` carve-out above.
+
 ### 8.3 Informational Fields
 
 Informational fields provide data that agents SHOULD present to users before completing the associated booking or modification action. Agents MUST NOT use informational fields to block or deny agent actions. Informational fields are not subject to `default_policy` when absent — their absence simply means the information is not available.
@@ -499,13 +523,22 @@ This section defines the algorithm an agent MUST follow when processing a RestaR
 
 Note: If `large_party_channels` specifies channels that differ from `allowed_channels`, the `allowed_channels` check in Step 3 takes precedence. An agent MUST NOT use a channel that is not listed in `allowed_channels`, even if `large_party_channels` suggests it.
 
-**Step 7: Check `deposit_policy`.** If `deposit_policy` is present and `required` is `true`, the agent MUST inform the user of the deposit requirement and obtain acknowledgment before proceeding. If absent, apply `default_policy`.
+**Step 7: Check `booking_window`.** If the action is `create_booking` and `booking_window` is present:
 
-**Step 8: Check `user_acknowledgment_requirements`.** If `user_acknowledgment_requirements` is present, the agent MUST present each listed policy to the user and obtain acknowledgment before proceeding. The agent MUST NOT proceed until all listed policies have been acknowledged. If absent, apply `default_policy`.
+- If `venue_timezone` is absent, treat the booking window as informational only — display the constraints to the user but do not deny the action.
+- If `venue_timezone` is present, evaluate the target booking time:
+  - If `min_hours_ahead` is set and the booking is less than that many hours from the current time, DENY the action.
+  - If `max_days_ahead` is set and the booking is more than that many days from the current time, DENY the action.
 
-**Step 9: Check `third_party_restrictions`.** If `third_party_restrictions` is present and any applicable restriction is `true`, the agent MUST deny the restricted action. If absent, apply `default_policy`.
+If the action is not `create_booking`, or if `booking_window` is absent, skip this step. A missing `booking_window` MUST NOT cause a denial regardless of `default_policy` (see Section 8.2, `booking_window` field definition).
 
-**Step 10: Surface informational fields.** The agent SHOULD present any available informational fields (`complaint_endpoint`, `cancellation_policy`, `no_show_policy`) to the user before completing the associated booking or modification action, or during cancellation handling where applicable. These fields MUST NOT block or deny any action.
+**Step 8: Check `deposit_policy`.** If `deposit_policy` is present and `required` is `true`, the agent MUST inform the user of the deposit requirement and obtain acknowledgment before proceeding. If absent, apply `default_policy`.
+
+**Step 9: Check `user_acknowledgment_requirements`.** If `user_acknowledgment_requirements` is present, the agent MUST present each listed policy to the user and obtain acknowledgment before proceeding. The agent MUST NOT proceed until all listed policies have been acknowledged. If absent, apply `default_policy`.
+
+**Step 10: Check `third_party_restrictions`.** If `third_party_restrictions` is present and any applicable restriction is `true`, the agent MUST deny the restricted action. If absent, apply `default_policy`.
+
+**Step 11: Surface informational fields.** The agent SHOULD present any available informational fields (`complaint_endpoint`, `cancellation_policy`, `no_show_policy`) to the user before completing the associated booking or modification action, or during cancellation handling where applicable. These fields MUST NOT block or deny any action.
 
 ## 10. Error Handling
 
@@ -574,7 +607,7 @@ An agent implementation conforms to this specification if it meets all of the fo
 1. The agent fetches the rules file from the well-known URI path before initiating any interaction with a venue.
 2. The agent validates the fetched document against the RestaRules JSON Schema.
 3. The agent processes all fields according to the semantics defined in Section 8.
-4. The agent follows the 10-step Decision Procedure defined in Section 9 in the specified order, including short-circuit evaluation on denial.
+4. The agent follows the 11-step Decision Procedure defined in Section 9 in the specified order, including short-circuit evaluation on denial.
 5. The agent handles errors according to Section 10.
 6. The agent respects caching guidance as described in Section 11.
 7. The agent ignores fields it does not recognize, per the extensibility rule in Section 7.
