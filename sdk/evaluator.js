@@ -6,7 +6,7 @@
  * No I/O, no side effects — pure function.
  */
 
-function evaluateCompliance(rules, { channel = null, partySize = null, action = null, attempts = null } = {}) {
+function evaluateCompliance(rules, { channel = null, partySize = null, action = null, attempts = null, targetTime = null, currentTime = null } = {}) {
   const dp = rules.default_policy;
   const result = {};
 
@@ -166,6 +166,53 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
     };
   } else {
     result.noShowPolicy = { defined: false };
+  }
+
+  // 11. Booking window (applies to create_booking only; absence never blocks)
+  if (rules.booking_window) {
+    const bw = rules.booking_window;
+    const hasTimezone = !!rules.venue_timezone;
+    const canEvaluate = action === "create_booking" && targetTime !== null && hasTimezone;
+
+    if (canEvaluate) {
+      const now = currentTime ? new Date(currentTime) : new Date();
+      const target = new Date(targetTime);
+      const diffMs = target.getTime() - now.getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+      const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+      let windowResult = "ALLOWED";
+      let reason = null;
+      if (bw.min_hours_ahead !== undefined && diffHours < bw.min_hours_ahead) {
+        windowResult = "DENIED";
+        reason = `Booking is ${diffHours.toFixed(1)} hours ahead, minimum is ${bw.min_hours_ahead}`;
+      } else if (bw.max_days_ahead !== undefined && diffDays > bw.max_days_ahead) {
+        windowResult = "DENIED";
+        reason = `Booking is ${diffDays.toFixed(1)} days ahead, maximum is ${bw.max_days_ahead}`;
+      }
+
+      result.bookingWindow = {
+        defined: true,
+        enforced: true,
+        result: windowResult,
+        reason,
+        minHoursAhead: bw.min_hours_ahead !== undefined ? bw.min_hours_ahead : null,
+        maxDaysAhead: bw.max_days_ahead !== undefined ? bw.max_days_ahead : null,
+      };
+    } else {
+      // Informational only — either not create_booking, no target_time, or no venue_timezone
+      result.bookingWindow = {
+        defined: true,
+        enforced: false,
+        result: "NOT_EVALUATED",
+        reason: !hasTimezone ? "venue_timezone absent — informational only" : null,
+        minHoursAhead: bw.min_hours_ahead !== undefined ? bw.min_hours_ahead : null,
+        maxDaysAhead: bw.max_days_ahead !== undefined ? bw.max_days_ahead : null,
+      };
+    }
+  } else {
+    // Absent booking_window — never blocks, regardless of default_policy
+    result.bookingWindow = { defined: false };
   }
 
   return result;

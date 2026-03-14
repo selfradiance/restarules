@@ -218,6 +218,30 @@ if (rules.user_acknowledgment_requirements) {
   reasons.push("user_acknowledgment_requirements is absent and default_policy is deny_if_unspecified");
 }
 
+// Check 8: booking_window (applies to create_booking only; absence never blocks)
+// booking_window is NOT governed by default_policy — absence means no time restriction.
+if (rules.booking_window && args["target-time"] && args.action === "create_booking") {
+  if (rules.venue_timezone) {
+    const now = new Date();
+    const target = new Date(args["target-time"]);
+    const diffMs = target.getTime() - now.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    const bw = rules.booking_window;
+    if (bw.min_hours_ahead !== undefined && diffHours < bw.min_hours_ahead) {
+      reasons.push(
+        `Booking is ${diffHours.toFixed(1)} hours ahead, booking_window.min_hours_ahead requires ${bw.min_hours_ahead}`
+      );
+    }
+    if (bw.max_days_ahead !== undefined && diffDays > bw.max_days_ahead) {
+      reasons.push(
+        `Booking is ${diffDays.toFixed(1)} days ahead, booking_window.max_days_ahead allows ${bw.max_days_ahead}`
+      );
+    }
+  }
+  // If venue_timezone is absent, booking_window is informational only — no denial
+}
+
 // cancellation_policy, no_show_policy, and complaint_endpoint are informational fields.
 // Their presence or absence never blocks agent actions and is not governed by default_policy.
 // Presence is surfaced in output below.
@@ -267,6 +291,14 @@ if (rules.cancellation_policy) {
 if (rules.no_show_policy) {
   const nsp = rules.no_show_policy;
   console.log(`no_show_fee: ${nsp.fee} ${nsp.currency || ""} (grace: ${nsp.grace_period_minutes || 0} minutes)`);
+}
+
+if (rules.booking_window) {
+  const bw = rules.booking_window;
+  const parts = [];
+  if (bw.min_hours_ahead !== undefined) parts.push(`min_hours_ahead: ${bw.min_hours_ahead}`);
+  if (bw.max_days_ahead !== undefined) parts.push(`max_days_ahead: ${bw.max_days_ahead}`);
+  console.log(`booking_window: ${parts.join(", ")}`);
 }
 
 if (rules.complaint_endpoint) {

@@ -1,0 +1,18 @@
+{
+  "schema_version": "0.2",
+  "venue_name": "Window Test Bistro",
+  "venue_url": "https://window-test-bistro.example.com",
+  "last_updated": "2026-03-10",
+  "effective_at": "2026-03-10",
+  "default_policy": "deny_if_unspecified",
+  "disclosure_required": {
+    "enabled": true,
+    "phrasing": "I am an AI assistant calling on behalf of a guest."
+  },
+  "allowed_channels": ["phone", "web"],
+  "venue_timezone": "America/New_York",
+  "booking_window": {
+    "min_hours_ahead": 2,
+    "max_days_ahead": 30
+  }
+}

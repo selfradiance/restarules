@@ -197,4 +197,78 @@ assert.strictEqual(i5.channel.source, "per_action_override", "source should be p
 assert.deepStrictEqual(i5.channel.allowedChannels, [], "allowed channels should be empty array");
 console.log("PASS: I5 — modify_booking denied on any channel (empty array override)");
 
-console.log("\nSDK tests: 23 passed, 0 failed.");
+// ============================================================
+// Category J: Booking Window
+// ============================================================
+
+const bookingWindowVenue = require("../test/fixtures/test-venue-with-booking-window.json");
+
+// J1: Booking within window passes (5 hours ahead, min is 2)
+const j1 = sdk.evaluateCompliance(bookingWindowVenue, {
+  action: "create_booking",
+  targetTime: "2026-03-13T17:00:00Z",
+  currentTime: "2026-03-13T12:00:00Z",
+});
+assert.strictEqual(j1.bookingWindow.defined, true, "booking_window should be defined");
+assert.strictEqual(j1.bookingWindow.enforced, true, "booking_window should be enforced");
+assert.strictEqual(j1.bookingWindow.result, "ALLOWED", "5 hours ahead should be within window");
+console.log("PASS: J1 — booking within window passes (5 hours ahead, min is 2)");
+
+// J2: Booking too soon denied (0.5 hours ahead, min is 2)
+const j2 = sdk.evaluateCompliance(bookingWindowVenue, {
+  action: "create_booking",
+  targetTime: "2026-03-13T12:30:00Z",
+  currentTime: "2026-03-13T12:00:00Z",
+});
+assert.strictEqual(j2.bookingWindow.result, "DENIED", "0.5 hours ahead should be denied by min_hours_ahead");
+assert.strictEqual(j2.bookingWindow.enforced, true, "should be enforced");
+console.log("PASS: J2 — booking too soon denied (0.5 hours ahead, min is 2)");
+
+// J3: Booking too far out denied (60 days ahead, max is 30)
+const j3 = sdk.evaluateCompliance(bookingWindowVenue, {
+  action: "create_booking",
+  targetTime: "2026-05-14T12:00:00Z",
+  currentTime: "2026-03-13T12:00:00Z",
+});
+assert.strictEqual(j3.bookingWindow.result, "DENIED", "60 days ahead should be denied by max_days_ahead");
+assert.strictEqual(j3.bookingWindow.enforced, true, "should be enforced");
+console.log("PASS: J3 — booking too far out denied (60 days ahead, max is 30)");
+
+// J4: Absent venue_timezone makes booking_window informational only (no denial)
+const noTzRules = JSON.parse(JSON.stringify(bookingWindowVenue));
+delete noTzRules.venue_timezone;
+const j4 = sdk.evaluateCompliance(noTzRules, {
+  action: "create_booking",
+  targetTime: "2026-03-13T12:30:00Z",
+  currentTime: "2026-03-13T12:00:00Z",
+});
+assert.strictEqual(j4.bookingWindow.defined, true, "booking_window should be defined");
+assert.strictEqual(j4.bookingWindow.enforced, false, "should not be enforced without timezone");
+assert.strictEqual(j4.bookingWindow.result, "NOT_EVALUATED", "should be NOT_EVALUATED without timezone");
+console.log("PASS: J4 — absent venue_timezone makes booking_window informational only");
+
+// J5: Absent booking_window never blocks (default_policy carve-out)
+const noBwRules = JSON.parse(JSON.stringify(bookingWindowVenue));
+delete noBwRules.booking_window;
+noBwRules.default_policy = "deny_if_unspecified";
+const j5 = sdk.evaluateCompliance(noBwRules, {
+  action: "create_booking",
+  targetTime: "2026-03-13T12:30:00Z",
+  currentTime: "2026-03-13T12:00:00Z",
+});
+assert.strictEqual(j5.bookingWindow.defined, false, "booking_window should not be defined");
+assert.ok(!j5.bookingWindow.defaultPolicyResult, "absent booking_window should NOT have defaultPolicyResult");
+console.log("PASS: J5 — absent booking_window never blocks (default_policy carve-out)");
+
+// J6: Non-create_booking action skips booking window evaluation
+const j6 = sdk.evaluateCompliance(bookingWindowVenue, {
+  action: "check_availability",
+  targetTime: "2026-03-13T12:30:00Z",
+  currentTime: "2026-03-13T12:00:00Z",
+});
+assert.strictEqual(j6.bookingWindow.defined, true, "booking_window should be defined");
+assert.strictEqual(j6.bookingWindow.enforced, false, "should not be enforced for check_availability");
+assert.strictEqual(j6.bookingWindow.result, "NOT_EVALUATED", "should be NOT_EVALUATED for non-create_booking");
+console.log("PASS: J6 — non-create_booking action skips booking window evaluation");
+
+console.log("\nSDK tests: 29 passed, 0 failed.");

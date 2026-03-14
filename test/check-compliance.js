@@ -424,4 +424,48 @@ try {
   process.exit(1);
 }
 
+// Test 21: booking_window info is displayed in CLI output when venue has booking_window
+try {
+  const bookingWindowRules = path.join(__dirname, "fixtures", "test-venue-with-booking-window.json");
+  const cmd = `node ${cliPath} --rules ${bookingWindowRules} --channel phone --disclosed true`;
+  const output = execSync(cmd, { encoding: "utf8" });
+  if (output.includes("booking_window") && output.includes("min_hours_ahead") && output.includes("max_days_ahead")) {
+    console.log(
+      "PASS: booking_window info is displayed in CLI output"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected booking_window info in CLI output"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on booking_window display test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
+// Test 22: --target-time evaluates booking window (too far out triggers denial)
+try {
+  const bookingWindowRules = path.join(__dirname, "fixtures", "test-venue-with-booking-window.json");
+  const cmd = `node ${cliPath} --rules ${bookingWindowRules} --channel phone --disclosed true --action create_booking --target-time 2027-06-01T12:00:00Z`;
+  const output = execSync(cmd, { encoding: "utf8" });
+  if (output.includes("DENY") && output.includes("booking_window.max_days_ahead")) {
+    console.log(
+      "PASS: --target-time evaluates booking window (too far out triggers denial)"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected DENY with booking_window.max_days_ahead reason for far-out booking"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on booking_window evaluation test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
 console.log("\nAll compliance checker tests passed.");

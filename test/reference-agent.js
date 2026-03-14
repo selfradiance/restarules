@@ -168,5 +168,28 @@ assert(
   t20.channel.result === "ALLOWED" && t20.channel.source === "base"
 );
 
+// Test 21: booking within window passes
+const bookingWindowRules = require("./fixtures/test-venue-with-booking-window.json");
+const t21 = evaluateCompliance(bookingWindowRules, {
+  action: "create_booking",
+  targetTime: "2026-03-13T17:00:00Z",
+  currentTime: "2026-03-13T12:00:00Z",
+});
+assert(
+  "booking within window passes (5 hours ahead, min is 2)",
+  t21.bookingWindow.defined === true && t21.bookingWindow.enforced === true && t21.bookingWindow.result === "ALLOWED"
+);
+
+// Test 22: booking outside window denied (too soon)
+const t22 = evaluateCompliance(bookingWindowRules, {
+  action: "create_booking",
+  targetTime: "2026-03-13T12:30:00Z",
+  currentTime: "2026-03-13T12:00:00Z",
+});
+assert(
+  "booking too soon denied (0.5 hours ahead, min is 2)",
+  t22.bookingWindow.defined === true && t22.bookingWindow.enforced === true && t22.bookingWindow.result === "DENIED"
+);
+
 console.log(`\nReference agent tests: ${passed} passed, ${failed} failed.`);
 if (failed > 0) process.exit(1);
