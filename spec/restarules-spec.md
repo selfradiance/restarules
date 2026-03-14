@@ -373,7 +373,7 @@ If a venue has no mechanism for identifying agents or users at the declared scop
 **Type:** Object containing `conditions` (array of strings)
 **Required:** No
 **Classification:** Permission
-**Valid condition values:** `"reservation_modification"` (additional values may be defined in future versions)
+**Valid condition values:** `"reservation_modification"`, `"special_event_booking"`, `"complaint_or_dispute"`, `"accessibility_request"`, `"dietary_emergency"`. Additional values may be defined in future schema versions.
 
 **Meaning:** Specifies conditions under which the agent MUST transfer the interaction to a human rather than proceeding automatically. In v0.2, party-size escalation is handled by `party_size_policy` rather than this field.
 
