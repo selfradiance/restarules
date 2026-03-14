@@ -1,8 +1,8 @@
 # RestaRules — Machine-readable agent conduct rules for restaurants
 
-A JSON schema and hosting standard that lets restaurants publish machine-readable rules for AI agent interactions — covering disclosure requirements, allowed channels, rate limits, human escalation, and anti-resale constraints.
+AI agents are already calling restaurants, booking tables, and modifying reservations — often without the venue's knowledge or consent. Reservation scalping costs restaurants real revenue. New York and Philadelphia have passed anti-bot reservation laws, and the EU AI Act requires AI disclosure by August 2026. Restaurants need a way to set boundaries that agents can read and obey.
 
-RestaRules defines venue-authored conduct constraints for AI agents. It does not define booking lifecycle semantics, availability, or payment processing — those concerns belong to protocols like AgenticBooking and UCP.
+RestaRules is a JSON schema and hosting standard that lets restaurants publish machine-readable rules for AI agent interactions — covering disclosure requirements, allowed channels, rate limits, human escalation, and anti-resale constraints. It does not define booking lifecycle semantics, availability, or payment processing — those concerns belong to protocols like AgenticBooking and UCP.
 
 ### Specification
 
@@ -383,7 +383,7 @@ RestaRules is in active development. Current version: **v0.3**.
 - **Reference agent** (`reference-agent/`) — fetches a live rules file, validates it, and evaluates compliance for simulated booking scenarios
 - **Agent SDK** (`sdk/`) — npm-ready library exporting `validateRules` (JSON Schema validation) and `evaluateCompliance` (full decision engine)
 - **Agent Compliance Demo** — live at [selfradiance.github.io/restarules/demo/voice/](https://selfradiance.github.io/restarules/demo/voice/). An agent fetches live venue rules, evaluates compliance, and speaks results aloud using the Web Speech API.
-- **107 tests** across schema validation, CLI compliance, reference agent, and SDK
+- **131 tests** across schema validation, CLI compliance, reference agent, SDK, and portable compliance vectors
 - **CI** via GitHub Actions (runs on every push and PR to main)
 
 ## SDK
