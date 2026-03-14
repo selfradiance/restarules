@@ -152,6 +152,7 @@ The following fields are optional. Their behavior when absent is governed by the
 |---|---|---|
 | `venue_currency` | String | Metadata |
 | `venue_timezone` | String | Metadata |
+| `allowed_channels_by_action` | Object | Permission |
 | `rate_limits` | Array | Permission |
 | `human_escalation_required` | Object | Permission |
 | `third_party_restrictions` | Object | Permission |
@@ -305,6 +306,24 @@ Channel definitions: `"phone"` refers to voice calls to the venue. `"web"` refer
 **Agent behavior:** Before initiating any interaction, the agent MUST check whether the intended channel is listed in this array. If the channel is not listed, the agent MUST NOT proceed on that channel.
 
 **Absence behavior:** This field is required. A rules file missing `allowed_channels` MUST fail schema validation.
+
+#### `allowed_channels_by_action`
+
+**Type:** Object
+**Required:** No
+**Classification:** Permission
+
+**Meaning:** Per-action channel overrides. Each key is an action type from the shared `action_type` vocabulary (`"check_availability"`, `"create_booking"`, `"modify_booking"`, `"cancel_booking"`). Each value is an array of permitted channel strings (`"phone"`, `"web"`, `"sms"`, `"email"`, `"app"`).
+
+When `allowed_channels_by_action` contains a key matching the agent's current action, the agent MUST use the channel list from that key and MUST NOT fall back to base `allowed_channels`. This is a full override, not an intersection or merge. A channel that appears in `allowed_channels_by_action` for a given action is permitted for that action even if it does not appear in base `allowed_channels`. Conversely, a channel that appears in base `allowed_channels` but not in the per-action override is not permitted for that action.
+
+When `allowed_channels_by_action` does not contain a key for the current action, or when the field is absent entirely, the agent MUST use base `allowed_channels`.
+
+An empty array for an action key (e.g., `"modify_booking": []`) means no channel is permitted for that action. Agents MUST treat this as a channel denial for that action.
+
+**Agent behavior:** Before initiating any interaction, the agent MUST determine the effective channel list for the current action by checking `allowed_channels_by_action` first. If a matching key exists, the agent MUST use that list. Otherwise, the agent MUST use base `allowed_channels`. If the intended channel is not in the effective list, the agent MUST deny the action.
+
+**Absence behavior:** When `allowed_channels_by_action` is absent, base `allowed_channels` governs all actions. Because `allowed_channels` is a required field, the absence of `allowed_channels_by_action` does not create ambiguity — `default_policy` does not apply to this field at the top level. At the per-action key level, if a venue defines `allowed_channels_by_action` but omits a key for a specific action, that action falls back to base `allowed_channels` regardless of `default_policy`.
 
 #### `rate_limits`
 
@@ -470,7 +489,7 @@ This section defines the algorithm an agent MUST follow when processing a RestaR
 
 **Step 2: Check `disclosure_required`.** If `disclosure_required.enabled` is `true`, the agent MUST disclose its automated nature using the venue's preferred phrasing or equivalent language.
 
-**Step 3: Check `allowed_channels`.** The agent MUST verify that its intended communication channel is listed in the `allowed_channels` array. If the channel is not listed, the agent MUST deny the action.
+**Step 3: Check channel permissions.** The agent MUST determine the effective channel list for the current action. If `allowed_channels_by_action` is present and contains a key matching the current action, the agent MUST use that action's channel list (full override — see Section 8.2). Otherwise, the agent MUST use base `allowed_channels`. If the agent's intended channel is not in the effective channel list, the agent MUST deny the action.
 
 **Step 4: Check `rate_limits`.** If `rate_limits` is present, the agent MUST verify that the intended action does not exceed any applicable rate limit. The counting scope for each rule is declared by the `counting_scope` field; if absent, the agent MUST count attempts as `"per_agent"` (see Section 8.2). If a limit would be exceeded, the agent MUST deny the action. If `rate_limits` is absent, apply `default_policy`.
 
