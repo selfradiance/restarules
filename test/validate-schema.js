@@ -330,6 +330,44 @@ if (validEmptyOverride) {
   failed = true;
 }
 
+// Test 27: valid booking_window accepted
+const withBookingWindow = JSON.parse(JSON.stringify(example));
+withBookingWindow.booking_window = {
+  min_hours_ahead: 2,
+  max_days_ahead: 30
+};
+const validBookingWindow = validate(withBookingWindow);
+if (validBookingWindow) {
+  console.log('PASS: Valid booking_window with min_hours_ahead and max_days_ahead accepted.');
+} else {
+  for (const error of validate.errors) {
+    console.error('FAIL:', error.instancePath, error.message);
+  }
+  failed = true;
+}
+
+// Test 28: booking_window with negative min_hours_ahead rejected
+const negativeMinHours = JSON.parse(JSON.stringify(example));
+negativeMinHours.booking_window = { min_hours_ahead: -1 };
+const validNegativeMinHours = validate(negativeMinHours);
+if (!validNegativeMinHours) {
+  console.log('PASS: booking_window with negative min_hours_ahead correctly fails validation.');
+} else {
+  console.error('FAIL: booking_window with negative min_hours_ahead should have failed validation.');
+  failed = true;
+}
+
+// Test 29: booking_window with negative max_days_ahead rejected
+const negativeMaxDays = JSON.parse(JSON.stringify(example));
+negativeMaxDays.booking_window = { max_days_ahead: -7 };
+const validNegativeMaxDays = validate(negativeMaxDays);
+if (!validNegativeMaxDays) {
+  console.log('PASS: booking_window with negative max_days_ahead correctly fails validation.');
+} else {
+  console.error('FAIL: booking_window with negative max_days_ahead should have failed validation.');
+  failed = true;
+}
+
 if (failed) {
   process.exit(1);
 }

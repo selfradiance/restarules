@@ -331,6 +331,23 @@
         ]
       },
       "uniqueItems": true
+    },
+    "booking_window": {
+      "type": "object",
+      "description": "Constraints on how far ahead or how close to the current time a booking can be made.",
+      "additionalProperties": false,
+      "properties": {
+        "min_hours_ahead": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Minimum lead time in hours before a booking can be made. E.g., 2 means bookings must be at least 2 hours in the future."
+        },
+        "max_days_ahead": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Maximum number of days in advance a reservation can be made. E.g., 30 means no bookings more than 30 days out."
+        }
+      }
     }
   },
   "$defs": {
