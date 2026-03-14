@@ -153,5 +153,20 @@ assert(
   t18.rateLimit.countingScope === "per_agent"
 );
 
+// Test 19: per-action channel override uses override channels
+const channelOverrideRules = require("./fixtures/test-venue-with-channel-overrides.json");
+const t19 = evaluateCompliance(channelOverrideRules, { channel: "app", action: "create_booking" });
+assert(
+  "per-action override allows app for create_booking (not in base, but in override)",
+  t19.channel.result === "ALLOWED" && t19.channel.source === "per_action_override"
+);
+
+// Test 20: action without override falls back to base allowed_channels
+const t20 = evaluateCompliance(channelOverrideRules, { channel: "phone", action: "check_availability" });
+assert(
+  "action without override falls back to base allowed_channels",
+  t20.channel.result === "ALLOWED" && t20.channel.source === "base"
+);
+
 console.log(`\nReference agent tests: ${passed} passed, ${failed} failed.`);
 if (failed > 0) process.exit(1);

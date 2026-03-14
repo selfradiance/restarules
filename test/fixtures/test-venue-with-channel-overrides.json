@@ -1,0 +1,20 @@
+{
+  "schema_version": "0.2",
+  "venue_name": "Bella Notte Trattoria",
+  "venue_url": "https://bellanotte-demo.example.com",
+  "last_updated": "2026-03-05",
+  "effective_at": "2026-03-05",
+  "default_policy": "deny_if_unspecified",
+  "disclosure_required": {
+    "enabled": true,
+    "phrasing": "I am an AI assistant calling on behalf of a guest."
+  },
+  "allowed_channels": ["phone", "web"],
+  "allowed_channels_by_action": {
+    "create_booking": ["web", "app"],
+    "modify_booking": []
+  },
+  "party_size_policy": {
+    "auto_book_max": 4
+  }
+}

@@ -161,4 +161,40 @@ const h2 = sdk.evaluateCompliance(countingScopeVenue, { action: "inquiry", attem
 assert.strictEqual(h2.rateLimit.countingScope, "per_agent", "absent counting_scope should default to per_agent");
 console.log("PASS: H2 — rate limit without counting_scope defaults to per_agent");
 
-console.log("\nSDK tests: 18 passed, 0 failed.");
+// ============================================================
+// Category I: Per-Action Channel Overrides
+// ============================================================
+
+const channelOverrideVenue = require("../test/fixtures/test-venue-with-channel-overrides.json");
+
+// I1: create_booking on web → allowed (in per-action override)
+const i1 = sdk.evaluateCompliance(channelOverrideVenue, { channel: "web", action: "create_booking" });
+assert.strictEqual(i1.channel.result, "ALLOWED", "web should be allowed for create_booking");
+assert.strictEqual(i1.channel.source, "per_action_override", "source should be per_action_override");
+console.log("PASS: I1 — create_booking on web allowed (in per-action override)");
+
+// I2: create_booking on phone → denied (phone in base but NOT in per-action override)
+const i2 = sdk.evaluateCompliance(channelOverrideVenue, { channel: "phone", action: "create_booking" });
+assert.strictEqual(i2.channel.result, "DENIED", "phone should be denied for create_booking (not in override)");
+assert.strictEqual(i2.channel.source, "per_action_override", "source should be per_action_override");
+console.log("PASS: I2 — create_booking on phone denied (full override, not intersection)");
+
+// I3: create_booking on app → allowed (app in override even though NOT in base)
+const i3 = sdk.evaluateCompliance(channelOverrideVenue, { channel: "app", action: "create_booking" });
+assert.strictEqual(i3.channel.result, "ALLOWED", "app should be allowed for create_booking (in override)");
+console.log("PASS: I3 — create_booking on app allowed (full override, not merge)");
+
+// I4: check_availability on phone → allowed (no override, falls back to base)
+const i4 = sdk.evaluateCompliance(channelOverrideVenue, { channel: "phone", action: "check_availability" });
+assert.strictEqual(i4.channel.result, "ALLOWED", "phone should be allowed for check_availability (base fallback)");
+assert.strictEqual(i4.channel.source, "base", "source should be base");
+console.log("PASS: I4 — check_availability on phone allowed (falls back to base)");
+
+// I5: modify_booking on any channel → denied (empty array override)
+const i5 = sdk.evaluateCompliance(channelOverrideVenue, { channel: "web", action: "modify_booking" });
+assert.strictEqual(i5.channel.result, "DENIED", "web should be denied for modify_booking (empty override)");
+assert.strictEqual(i5.channel.source, "per_action_override", "source should be per_action_override");
+assert.deepStrictEqual(i5.channel.allowedChannels, [], "allowed channels should be empty array");
+console.log("PASS: I5 — modify_booking denied on any channel (empty array override)");
+
+console.log("\nSDK tests: 23 passed, 0 failed.");

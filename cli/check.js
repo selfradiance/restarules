@@ -106,12 +106,24 @@ if (rules.disclosure_required && rules.disclosure_required.enabled === true) {
   }
 }
 
-// Check 2: allowed_channels (Decision Procedure step 3)
+// Check 2: allowed_channels with per-action override support (Decision Procedure step 3)
 if (rules.allowed_channels) {
-  if (!rules.allowed_channels.includes(channel)) {
-    reasons.push(
-      `Channel "${channel}" is not in allowed_channels [${rules.allowed_channels.join(", ")}]`
-    );
+  let effectiveChannels = rules.allowed_channels;
+  let channelSource = "base";
+  if (args.action && rules.allowed_channels_by_action && args.action in rules.allowed_channels_by_action) {
+    effectiveChannels = rules.allowed_channels_by_action[args.action];
+    channelSource = "per_action_override";
+  }
+  if (!effectiveChannels.includes(channel)) {
+    if (channelSource === "per_action_override") {
+      reasons.push(
+        `Channel "${channel}" is not in allowed_channels_by_action.${args.action} [${effectiveChannels.join(", ")}]`
+      );
+    } else {
+      reasons.push(
+        `Channel "${channel}" is not in allowed_channels [${effectiveChannels.join(", ")}]`
+      );
+    }
   }
 } else if (rules.default_policy === "deny_if_unspecified") {
   reasons.push(
@@ -220,6 +232,12 @@ if (reasons.length === 0) {
   console.log("DENY");
   console.log("reasons:");
   reasons.forEach((r) => console.log(`  - ${r}`));
+}
+
+if (rules.allowed_channels_by_action) {
+  for (const [action, channels] of Object.entries(rules.allowed_channels_by_action)) {
+    console.log(`allowed_channels_by_action: ${action} — [${channels.join(", ")}]`);
+  }
 }
 
 if (rules.rate_limits) {

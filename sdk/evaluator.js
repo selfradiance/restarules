@@ -16,12 +16,19 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
     phrasing: rules.disclosure_required.phrasing || null,
   };
 
-  // 3. Channel check
+  // 3. Channel check (with per-action override support)
   if (channel !== null) {
-    if (rules.allowed_channels.includes(channel)) {
-      result.channel = { result: "ALLOWED" };
+    // Determine effective channel list: per-action override takes precedence
+    let effectiveChannels = rules.allowed_channels;
+    let channelSource = "base";
+    if (action !== null && rules.allowed_channels_by_action && action in rules.allowed_channels_by_action) {
+      effectiveChannels = rules.allowed_channels_by_action[action];
+      channelSource = "per_action_override";
+    }
+    if (effectiveChannels.includes(channel)) {
+      result.channel = { result: "ALLOWED", source: channelSource, allowedChannels: effectiveChannels };
     } else {
-      result.channel = { result: "DENIED", allowedChannels: rules.allowed_channels };
+      result.channel = { result: "DENIED", source: channelSource, allowedChannels: effectiveChannels };
     }
   } else {
     result.channel = { result: "NOT_CHECKED", allowedChannels: rules.allowed_channels };

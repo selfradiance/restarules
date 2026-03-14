@@ -380,4 +380,48 @@ try {
   process.exit(1);
 }
 
+// Test 19: per-action channel override is displayed in CLI output
+try {
+  const channelOverrideRules = path.join(__dirname, "fixtures", "test-venue-with-channel-overrides.json");
+  const cmd = `node ${cliPath} --rules ${channelOverrideRules} --channel web --disclosed true --action create_booking`;
+  const output = execSync(cmd, { encoding: "utf8" });
+  if (output.includes("allowed_channels_by_action") && output.includes("create_booking")) {
+    console.log(
+      "PASS: per-action channel override is displayed in CLI output"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected allowed_channels_by_action to appear in CLI output"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on per-action channel override display test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
+// Test 20: channel check uses per-action override when present (phone denied for create_booking)
+try {
+  const channelOverrideRules = path.join(__dirname, "fixtures", "test-venue-with-channel-overrides.json");
+  const cmd = `node ${cliPath} --rules ${channelOverrideRules} --channel phone --disclosed true --action create_booking`;
+  const output = execSync(cmd, { encoding: "utf8" });
+  if (output.includes("DENY") && output.includes("allowed_channels_by_action.create_booking")) {
+    console.log(
+      "PASS: channel check uses per-action override (phone denied for create_booking)"
+    );
+  } else {
+    console.error(
+      "FAIL: Expected DENY with per-action override reason for phone on create_booking"
+    );
+    console.error(output);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: CLI threw an error on per-action channel override check test");
+  console.error(err.stderr || err.message);
+  process.exit(1);
+}
+
 console.log("\nAll compliance checker tests passed.");
