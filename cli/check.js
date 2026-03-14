@@ -45,18 +45,7 @@ function parseArgs(argv) {
   return args;
 }
 
-function isValidTimezone(tz) {
-  try {
-    Intl.DateTimeFormat(undefined, { timeZone: tz });
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
-function hasTimezoneOffset(isoString) {
-  return /(?:Z|[+-]\d{2}(?::?\d{2})?)$/.test(isoString);
-}
+const { isValidTimezone, hasTimezoneOffset } = require('../sdk');
 
 const args = parseArgs(process.argv);
 

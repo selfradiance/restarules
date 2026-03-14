@@ -424,4 +424,4 @@ function getAggregateVerdict(report) {
   return { verdict: "ALLOW", reasons: [] };
 }
 
-module.exports = { evaluateCompliance, getAggregateVerdict };
+module.exports = { evaluateCompliance, getAggregateVerdict, isValidTimezone, hasTimezoneOffset };
