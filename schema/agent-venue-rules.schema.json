@@ -110,6 +110,11 @@
             },
             "uniqueItems": true,
             "description": "Which actions this rate limit applies to. If absent, applies to all actions."
+          },
+          "counting_scope": {
+            "type": "string",
+            "description": "Scope for counting rate limit attempts. Defaults to per_agent when absent.",
+            "enum": ["per_agent", "per_user", "per_session"]
           }
         }
       }

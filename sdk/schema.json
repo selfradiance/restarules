@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://restarules.org/schema/v0.1/agent-venue-rules.schema.json",
+  "$id": "https://restarules.org/schema/v0.2/agent-venue-rules.schema.json",
   "title": "RestaRules Agent Venue Rules",
-  "description": "Machine-readable conduct and consent rules for AI agent interactions with a restaurant venue. Schema v0.1.",
+  "description": "Machine-readable conduct and consent rules for AI agent interactions with a restaurant venue. Schema v0.2.",
   "type": "object",
   "required": [
     "schema_version",
@@ -110,6 +110,11 @@
             },
             "uniqueItems": true,
             "description": "Which actions this rate limit applies to. If absent, applies to all actions."
+          },
+          "counting_scope": {
+            "type": "string",
+            "description": "Scope for counting rate limit attempts. Defaults to per_agent when absent.",
+            "enum": ["per_agent", "per_user", "per_session"]
           }
         }
       }

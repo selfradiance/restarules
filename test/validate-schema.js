@@ -226,6 +226,53 @@ if (validNoAppliesTo) {
   failed = true;
 }
 
+// Test 20: valid counting_scope values accepted
+const withCountingScope = JSON.parse(JSON.stringify(scopedRateLimitsFixture));
+withCountingScope.rate_limits[0].counting_scope = "per_agent";
+const validCountingScope = validate(withCountingScope);
+if (validCountingScope) {
+  // Also spot-check per_user and per_session
+  withCountingScope.rate_limits[0].counting_scope = "per_user";
+  const validPerUser = validate(withCountingScope);
+  withCountingScope.rate_limits[0].counting_scope = "per_session";
+  const validPerSession = validate(withCountingScope);
+  if (validPerUser && validPerSession) {
+    console.log('PASS: All valid counting_scope values (per_agent, per_user, per_session) accepted.');
+  } else {
+    console.error('FAIL: Some valid counting_scope values were rejected.');
+    failed = true;
+  }
+} else {
+  for (const error of validate.errors) {
+    console.error('FAIL:', error.instancePath, error.message);
+  }
+  failed = true;
+}
+
+// Test 21: invalid counting_scope value rejected
+const invalidCountingScope = JSON.parse(JSON.stringify(scopedRateLimitsFixture));
+invalidCountingScope.rate_limits[0].counting_scope = "per_ip";
+const validInvalidScope = validate(invalidCountingScope);
+if (!validInvalidScope) {
+  console.log('PASS: Invalid counting_scope value "per_ip" correctly fails validation.');
+} else {
+  console.error('FAIL: Invalid counting_scope value "per_ip" should have failed validation.');
+  failed = true;
+}
+
+// Test 22: absent counting_scope is accepted (field is optional, defaults to per_agent)
+const noCountingScope = JSON.parse(JSON.stringify(scopedRateLimitsFixture));
+delete noCountingScope.rate_limits[0].counting_scope;
+const validNoScope = validate(noCountingScope);
+if (validNoScope) {
+  console.log('PASS: Rate limit without counting_scope still validates (optional field).');
+} else {
+  for (const error of validate.errors) {
+    console.error('FAIL:', error.instancePath, error.message);
+  }
+  failed = true;
+}
+
 if (failed) {
   process.exit(1);
 }
