@@ -391,6 +391,26 @@ assert(
   t39.bookingWindow.result === "NOT_EVALUATED" && t39.bookingWindow.reason.includes("target_time_missing_timezone")
 );
 
+// Test 40: party size advisory — human_review_recommended surfaced
+const fullPartySizeVenue = require("./fixtures/test-venue-with-full-party-size.json");
+const t40 = evaluateCompliance(fullPartySizeVenue, { partySize: 9 });
+assert(
+  "party of 9 escalates with human_review_recommended and large_party_channels",
+  t40.partySize.result === "ESCALATE_TO_HUMAN" &&
+  t40.partySize.humanReviewRecommended === true &&
+  t40.partySize.humanReviewAbove === 8 &&
+  JSON.stringify(t40.partySize.largePartyChannels) === JSON.stringify(["phone", "email"])
+);
+
+// Test 41: party of 4 — no advisory fields
+const t41 = evaluateCompliance(fullPartySizeVenue, { partySize: 4 });
+assert(
+  "party of 4 allowed with no advisory fields",
+  t41.partySize.result === "ALLOWED" &&
+  t41.partySize.humanReviewRecommended === undefined &&
+  t41.partySize.largePartyChannels === undefined
+);
+
 // ============================================================
 // Category O: Fetch Hardening (agent.js CLI tests)
 // ============================================================

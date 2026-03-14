@@ -1,0 +1,15 @@
+{
+  "schema_version": "0.3",
+  "venue_name": "Full Party Size Bistro",
+  "venue_url": "https://full-party-size.example.com",
+  "last_updated": "2026-03-14",
+  "effective_at": "2026-03-14",
+  "default_policy": "allow_if_unspecified",
+  "disclosure_required": { "enabled": false },
+  "allowed_channels": ["phone", "web", "email"],
+  "party_size_policy": {
+    "auto_book_max": 6,
+    "human_review_above": 8,
+    "large_party_channels": ["phone", "email"]
+  }
+}

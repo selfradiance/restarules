@@ -441,6 +441,58 @@ assert.ok(q4.bookingWindow.result === "ALLOWED" || q4.bookingWindow.result === "
 console.log("PASS: Q4 — no currentTime provided with valid venue_timezone exercises timezone path without error");
 
 // ============================================================
+// Category R: Party Size Advisory Fields
+// ============================================================
+
+const fullPartySizeVenue = require("../test/fixtures/test-venue-with-full-party-size.json");
+
+// R1: Party of 4 → ALLOWED, no advisory fields
+const r1 = sdk.evaluateCompliance(fullPartySizeVenue, { partySize: 4 });
+assert.strictEqual(r1.partySize.result, "ALLOWED", "Party of 4 should be allowed");
+assert.strictEqual(r1.partySize.autoMax, 6, "autoMax should be 6");
+assert.strictEqual(r1.partySize.humanReviewRecommended, undefined, "no human review recommendation for small party");
+assert.strictEqual(r1.partySize.largePartyChannels, undefined, "no large party channels for small party");
+console.log("PASS: R1 — party of 4 allowed with no advisory fields");
+
+// R2: Party of 7 → ESCALATE_TO_HUMAN, large_party_channels surfaced
+const r2 = sdk.evaluateCompliance(fullPartySizeVenue, { partySize: 7 });
+assert.strictEqual(r2.partySize.result, "ESCALATE_TO_HUMAN", "Party of 7 should escalate");
+assert.deepStrictEqual(r2.partySize.largePartyChannels, ["phone", "email"], "large party channels surfaced");
+assert.strictEqual(r2.partySize.humanReviewRecommended, undefined, "7 is below human_review_above of 8");
+console.log("PASS: R2 — party of 7 escalates with large_party_channels surfaced");
+
+// R3: Party of 9 → ESCALATE_TO_HUMAN, human_review_recommended + large_party_channels
+const r3 = sdk.evaluateCompliance(fullPartySizeVenue, { partySize: 9 });
+assert.strictEqual(r3.partySize.result, "ESCALATE_TO_HUMAN", "Party of 9 should escalate");
+assert.strictEqual(r3.partySize.humanReviewRecommended, true, "human review recommended");
+assert.strictEqual(r3.partySize.humanReviewAbove, 8, "humanReviewAbove threshold surfaced");
+assert.deepStrictEqual(r3.partySize.largePartyChannels, ["phone", "email"], "large party channels surfaced");
+console.log("PASS: R3 — party of 9 escalates with human_review_recommended and large_party_channels");
+
+// R4: Party of 5 with human_review_above: 4 → ALLOWED but human_review_recommended
+const lowReviewVenue = JSON.parse(JSON.stringify(fullPartySizeVenue));
+lowReviewVenue.party_size_policy.human_review_above = 4;
+const r4 = sdk.evaluateCompliance(lowReviewVenue, { partySize: 5 });
+assert.strictEqual(r4.partySize.result, "ALLOWED", "Party of 5 should be allowed (under auto_book_max 6)");
+assert.strictEqual(r4.partySize.humanReviewRecommended, true, "human review recommended (above threshold of 4)");
+assert.strictEqual(r4.partySize.humanReviewAbove, 4, "humanReviewAbove threshold surfaced");
+assert.strictEqual(r4.partySize.largePartyChannels, undefined, "no large party channels (not above auto_book_max)");
+console.log("PASS: R4 — party of 5 allowed but human_review_recommended (above review threshold)");
+
+// R5: Channel warning when large party on wrong channel
+const r5 = sdk.evaluateCompliance(fullPartySizeVenue, { partySize: 7, channel: "web" });
+assert.strictEqual(r5.partySize.result, "ESCALATE_TO_HUMAN", "Party of 7 should escalate");
+assert.ok(r5.partySize.channelWarning, "channel warning should be present");
+assert.strictEqual(r5.partySize.channelWarning.currentChannel, "web", "current channel should be web");
+assert.deepStrictEqual(r5.partySize.channelWarning.requiredChannels, ["phone", "email"], "required channels surfaced");
+console.log("PASS: R5 — channel warning when large party on wrong channel");
+
+// R6: No channel warning when large party on correct channel
+const r6 = sdk.evaluateCompliance(fullPartySizeVenue, { partySize: 7, channel: "phone" });
+assert.strictEqual(r6.partySize.channelWarning, undefined, "no channel warning when on correct channel");
+console.log("PASS: R6 — no channel warning when large party on correct channel");
+
+// ============================================================
 // Category N: Schema Sync Verification
 // ============================================================
 
@@ -452,4 +504,4 @@ const sdkSchema = fs.readFileSync(path.join(__dirname, "..", "sdk", "schema.json
 assert.strictEqual(sdkSchema, canonicalSchema, "sdk/schema.json must match schema/agent-venue-rules.schema.json");
 console.log("PASS: N1 — sdk/schema.json matches the canonical schema file");
 
-console.log("\nSDK tests: 47 passed, 0 failed.");
+console.log("\nSDK tests: 53 passed, 0 failed.");

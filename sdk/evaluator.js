@@ -128,11 +128,35 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
   // 6. Party size
   if (partySize !== null) {
     if (rules.party_size_policy) {
-      const autoMax = rules.party_size_policy.auto_book_max;
-      result.partySize = {
+      const psp = rules.party_size_policy;
+      const autoMax = psp.auto_book_max;
+      const partySizeResult = {
         result: partySize > autoMax ? "ESCALATE_TO_HUMAN" : "ALLOWED",
         autoMax,
       };
+
+      // Advisory: human_review_above
+      if (psp.human_review_above !== undefined) {
+        partySizeResult.humanReviewAbove = psp.human_review_above;
+        if (partySize > psp.human_review_above) {
+          partySizeResult.humanReviewRecommended = true;
+        }
+      }
+
+      // Advisory: large_party_channels (surfaced when party exceeds auto_book_max)
+      if (psp.large_party_channels && partySize > autoMax) {
+        partySizeResult.largePartyChannels = psp.large_party_channels;
+        // Channel warning if caller provided a channel not in the large party list
+        if (channel !== null && !psp.large_party_channels.includes(channel)) {
+          partySizeResult.channelWarning = {
+            message: "Current channel not in venue's large_party_channels list",
+            currentChannel: channel,
+            requiredChannels: psp.large_party_channels,
+          };
+        }
+      }
+
+      result.partySize = partySizeResult;
     } else {
       result.partySize = {
         result: dp === "allow_if_unspecified" ? "ALLOWED" : "DENIED_DEFAULT_POLICY",

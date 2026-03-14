@@ -124,6 +124,7 @@ if (!valid) {
 // --- Evaluate rules ---
 
 const reasons = [];
+const partySizeAdvisory = [];
 
 // Check 1: disclosure_required (Decision Procedure step 2)
 if (rules.disclosure_required && rules.disclosure_required.enabled === true) {
@@ -184,10 +185,19 @@ if (rules.rate_limits) {
 if (args["party-size"] !== undefined) {
   const partySize = parseInt(args["party-size"], 10);
   if (rules.party_size_policy) {
-    if (partySize > rules.party_size_policy.auto_book_max) {
+    const psp = rules.party_size_policy;
+    if (partySize > psp.auto_book_max) {
       reasons.push(
-        `Party size ${partySize} exceeds auto_book_max of ${rules.party_size_policy.auto_book_max} — human review required`
+        `Party size ${partySize} exceeds auto_book_max of ${psp.auto_book_max} — human review required`
       );
+    }
+    // Advisory: human_review_above (does not block — informational only)
+    if (psp.human_review_above !== undefined && partySize > psp.human_review_above) {
+      partySizeAdvisory.push(`Human review recommended (party size ${partySize} exceeds human_review_above threshold of ${psp.human_review_above})`);
+    }
+    // Advisory: large_party_channels (surfaced when party exceeds auto_book_max)
+    if (psp.large_party_channels && partySize > psp.auto_book_max) {
+      partySizeAdvisory.push(`Large party channels: ${psp.large_party_channels.join(", ")}`);
     }
   } else if (rules.default_policy === "deny_if_unspecified") {
     reasons.push(
@@ -301,6 +311,10 @@ if (reasons.length === 0) {
   console.log("DENY");
   console.log("reasons:");
   reasons.forEach((r) => console.log(`  - ${r}`));
+}
+
+for (const advisory of partySizeAdvisory) {
+  console.log(`party_size_advisory: ${advisory}`);
 }
 
 if (rules.allowed_channels_by_action) {

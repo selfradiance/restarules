@@ -590,4 +590,30 @@ try {
   }
 }
 
+// Test 39: party size advisory — human_review_recommended surfaced for large party
+{
+  const fullPartySizeRules = path.join(__dirname, "fixtures", "test-venue-with-full-party-size.json");
+  const r39 = runSafe(["--channel", "phone", "--disclosed", "true", "--party-size", "9"], fullPartySizeRules);
+  if (r39.status === 1 && r39.stdout.includes("DENY") && r39.stdout.includes("party_size_advisory") && r39.stdout.includes("Human review recommended") && r39.stdout.includes("Large party channels")) {
+    console.log("PASS: party size advisory — human_review_recommended and large_party_channels surfaced");
+  } else {
+    console.error("FAIL: Expected DENY with party size advisory fields for party of 9");
+    console.error("status:", r39.status, "stdout:", r39.stdout);
+    process.exit(1);
+  }
+}
+
+// Test 40: party size advisory — no advisory for small party
+{
+  const fullPartySizeRules = path.join(__dirname, "fixtures", "test-venue-with-full-party-size.json");
+  const r40 = runSafe(["--channel", "phone", "--disclosed", "true", "--party-size", "4"], fullPartySizeRules);
+  if (r40.status === 0 && r40.stdout.includes("ALLOW") && !r40.stdout.includes("party_size_advisory")) {
+    console.log("PASS: party size advisory — no advisory for small party of 4");
+  } else {
+    console.error("FAIL: Expected ALLOW with no advisory for small party");
+    console.error("status:", r40.status, "stdout:", r40.stdout);
+    process.exit(1);
+  }
+}
+
 console.log("\nAll compliance checker tests passed.");
