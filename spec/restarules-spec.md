@@ -238,7 +238,7 @@ The JSON Schema enforces strict validation on defined sub-objects but permits un
 
 **Meaning:** The date when the rules in this file take effect. This allows a venue to publish updated rules in advance of their enforcement date.
 
-**Agent behavior:** Agents SHOULD compare this date to the current date. If `effective_at` is in the future, agents SHOULD continue using the previously cached rules file until the effective date arrives.
+**Agent behavior:** Agents SHOULD compare this date to the current date. If `effective_at` is in the future, agents SHOULD continue using the previously cached rules file until the effective date arrives. If no previously cached version is available (e.g., the agent is fetching the venue's rules for the first time), the agent SHOULD treat future-dated rules as not yet in effect and SHOULD proceed as if no rules file exists for that venue.
 
 **Absence behavior:** This field is required. A rules file missing `effective_at` MUST fail schema validation.
 
@@ -258,9 +258,9 @@ The JSON Schema enforces strict validation on defined sub-objects but permits un
 **Type:** String (IANA timezone identifier, e.g., `"America/New_York"`, `"Europe/London"`)
 **Required:** No
 
-**Meaning:** The timezone in which the venue operates.
+**Meaning:** The timezone in which the venue operates. The value MUST be a valid IANA Time Zone Database identifier (e.g., `America/New_York`, `Europe/London`, `Asia/Tokyo`). The JSON Schema enforces only a non-empty string; full IANA validation is deferred to a future schema version.
 
-**Agent behavior:** Agents MAY use this field to interpret time-sensitive rules or for logging purposes. It has no effect on compliance decisions.
+**Agent behavior:** Agents MAY use this field to interpret time-sensitive rules or for logging purposes. It has no effect on compliance decisions. Agents that cannot parse the timezone value SHOULD log a warning and SHOULD treat timezone-dependent fields (such as `booking_window`) as not evaluable.
 
 **Absence behavior:** If absent, agents SHOULD NOT assume a default timezone.
 

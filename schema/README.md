@@ -50,7 +50,7 @@ These fields describe venue terms. Their absence never blocks agent actions.
 ## Optional Fields — Metadata
 
 - `venue_currency` — ISO 4217 currency code (e.g., `"USD"`)
-- `venue_timezone` — IANA timezone identifier (e.g., `"America/New_York"`)
+- `venue_timezone` — Must be a valid IANA Time Zone Database identifier (e.g., `"America/New_York"`). The schema enforces only a non-empty string; full IANA validation is deferred to a future version
 
 ## Shared Definitions (`$defs`)
 
