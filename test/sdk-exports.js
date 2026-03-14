@@ -312,4 +312,50 @@ assert.strictEqual(l1.bookingWindow.result, "NOT_EVALUATED", "result should be N
 assert.ok(l1.bookingWindow.reason.includes("Contradictory"), "reason should mention contradictory");
 console.log("PASS: L1 — contradictory booking window treated as non-actionable with warning");
 
-console.log("\nSDK tests: 32 passed, 0 failed.");
+// ============================================================
+// Category M: Invalid Input Validation
+// ============================================================
+
+// M1: NaN party size returns INVALID_INPUT
+const m1 = sdk.evaluateCompliance(fullVenue, { partySize: NaN });
+assert.ok(m1.inputError, "NaN partySize should produce inputError");
+assert.strictEqual(m1.inputError.result, "INVALID_INPUT", "result should be INVALID_INPUT");
+assert.ok(m1.inputError.reason.includes("partySize"), "reason should mention partySize");
+console.log("PASS: M1 — NaN party size returns INVALID_INPUT");
+
+// M2: NaN attempt count returns INVALID_INPUT
+const m2 = sdk.evaluateCompliance(fullVenue, { action: "booking_request", attempts: NaN });
+assert.ok(m2.inputError, "NaN attempts should produce inputError");
+assert.strictEqual(m2.inputError.result, "INVALID_INPUT", "result should be INVALID_INPUT");
+assert.ok(m2.inputError.reason.includes("attempts"), "reason should mention attempts");
+console.log("PASS: M2 — NaN attempt count returns INVALID_INPUT");
+
+// M3: Invalid targetTime string returns INVALID_INPUT
+const m3 = sdk.evaluateCompliance(bookingWindowVenue, {
+  action: "create_booking",
+  targetTime: "not-a-date",
+  currentTime: "2026-03-13T12:00:00Z",
+});
+assert.ok(m3.inputError, "Invalid targetTime should produce inputError");
+assert.strictEqual(m3.inputError.result, "INVALID_INPUT", "result should be INVALID_INPUT");
+assert.ok(m3.inputError.reason.includes("targetTime"), "reason should mention targetTime");
+console.log("PASS: M3 — invalid targetTime string returns INVALID_INPUT");
+
+// M4: Invalid currentTime string returns INVALID_INPUT
+const m4 = sdk.evaluateCompliance(bookingWindowVenue, {
+  action: "create_booking",
+  targetTime: "2026-03-13T17:00:00Z",
+  currentTime: "garbage",
+});
+assert.ok(m4.inputError, "Invalid currentTime should produce inputError");
+assert.strictEqual(m4.inputError.result, "INVALID_INPUT", "result should be INVALID_INPUT");
+assert.ok(m4.inputError.reason.includes("currentTime"), "reason should mention currentTime");
+console.log("PASS: M4 — invalid currentTime string returns INVALID_INPUT");
+
+// M5: Infinity party size returns INVALID_INPUT
+const m5 = sdk.evaluateCompliance(fullVenue, { partySize: Infinity });
+assert.ok(m5.inputError, "Infinity partySize should produce inputError");
+assert.strictEqual(m5.inputError.result, "INVALID_INPUT", "result should be INVALID_INPUT");
+console.log("PASS: M5 — Infinity party size returns INVALID_INPUT");
+
+console.log("\nSDK tests: 37 passed, 0 failed.");

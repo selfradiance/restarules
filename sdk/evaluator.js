@@ -10,6 +10,20 @@ function evaluateCompliance(rules, { channel = null, partySize = null, action = 
   const dp = rules.default_policy;
   const result = {};
 
+  // Input validation: reject non-finite numeric inputs and invalid date strings
+  if (partySize !== null && !Number.isFinite(partySize)) {
+    return { inputError: { result: "INVALID_INPUT", reason: `Invalid partySize: ${partySize}` } };
+  }
+  if (attempts !== null && !Number.isFinite(attempts)) {
+    return { inputError: { result: "INVALID_INPUT", reason: `Invalid attempts: ${attempts}` } };
+  }
+  if (targetTime !== null && isNaN(new Date(targetTime).getTime())) {
+    return { inputError: { result: "INVALID_INPUT", reason: `Invalid targetTime: ${targetTime}` } };
+  }
+  if (currentTime !== null && isNaN(new Date(currentTime).getTime())) {
+    return { inputError: { result: "INVALID_INPUT", reason: `Invalid currentTime: ${currentTime}` } };
+  }
+
   // 2. Disclosure
   result.disclosure = {
     required: rules.disclosure_required.enabled,

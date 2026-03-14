@@ -556,4 +556,55 @@ try {
   process.exit(1);
 }
 
+// Test 27: invalid --party-size exits with code 2
+try {
+  const { spawnSync } = require("child_process");
+  const result27 = spawnSync("node", [cliPath, "--rules", exampleRules, "--channel", "phone", "--disclosed", "true", "--party-size", "abc"], { encoding: "utf8" });
+  if (result27.status === 2 && result27.stderr.includes("Invalid --party-size")) {
+    console.log("PASS: invalid --party-size exits with code 2");
+  } else {
+    console.error("FAIL: Expected exit code 2 for invalid --party-size");
+    console.error("status:", result27.status, "stderr:", result27.stderr);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: Error testing invalid --party-size");
+  console.error(err.message);
+  process.exit(1);
+}
+
+// Test 28: invalid --attempt-count exits with code 2
+try {
+  const { spawnSync } = require("child_process");
+  const result28 = spawnSync("node", [cliPath, "--rules", exampleRules, "--channel", "phone", "--disclosed", "true", "--action", "booking_request", "--attempt-count", "xyz"], { encoding: "utf8" });
+  if (result28.status === 2 && result28.stderr.includes("Invalid --attempt-count")) {
+    console.log("PASS: invalid --attempt-count exits with code 2");
+  } else {
+    console.error("FAIL: Expected exit code 2 for invalid --attempt-count");
+    console.error("status:", result28.status, "stderr:", result28.stderr);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: Error testing invalid --attempt-count");
+  console.error(err.message);
+  process.exit(1);
+}
+
+// Test 29: invalid --target-time exits with code 2
+try {
+  const { spawnSync } = require("child_process");
+  const result29 = spawnSync("node", [cliPath, "--rules", exampleRules, "--channel", "phone", "--disclosed", "true", "--action", "create_booking", "--target-time", "not-a-date"], { encoding: "utf8" });
+  if (result29.status === 2 && result29.stderr.includes("Invalid --target-time")) {
+    console.log("PASS: invalid --target-time exits with code 2");
+  } else {
+    console.error("FAIL: Expected exit code 2 for invalid --target-time");
+    console.error("status:", result29.status, "stderr:", result29.stderr);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error("FAIL: Error testing invalid --target-time");
+  console.error(err.message);
+  process.exit(1);
+}
+
 console.log("\nAll compliance checker tests passed.");

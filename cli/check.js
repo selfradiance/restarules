@@ -60,6 +60,31 @@ const rulesPath = args.rules;
 const channel = args.channel;
 const disclosed = args.disclosed === "true";
 
+// --- Validate numeric and date inputs ---
+
+if (args["party-size"] !== undefined) {
+  const parsed = parseInt(args["party-size"], 10);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    console.error(`Invalid --party-size: "${args["party-size"]}" — must be a positive integer`);
+    process.exit(2);
+  }
+}
+
+if (args["attempt-count"] !== undefined) {
+  const parsed = parseInt(args["attempt-count"], 10);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    console.error(`Invalid --attempt-count: "${args["attempt-count"]}" — must be a non-negative integer`);
+    process.exit(2);
+  }
+}
+
+if (args["target-time"] !== undefined) {
+  if (isNaN(new Date(args["target-time"]).getTime())) {
+    console.error(`Invalid --target-time: "${args["target-time"]}" — must be a valid ISO 8601 datetime`);
+    process.exit(2);
+  }
+}
+
 // --- Load files ---
 
 let rules;

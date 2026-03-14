@@ -293,5 +293,41 @@ assert(
   t28.partySize.result === "ESCALATE_TO_HUMAN"
 );
 
+// Test 29: NaN party size returns INVALID_INPUT
+const t29 = evaluateCompliance(rules, { partySize: NaN });
+assert(
+  "NaN party size returns INVALID_INPUT",
+  t29.inputError && t29.inputError.result === "INVALID_INPUT" && t29.inputError.reason.includes("partySize")
+);
+
+// Test 30: NaN attempts returns INVALID_INPUT
+const t30 = evaluateCompliance(rules, { action: "booking_request", attempts: NaN });
+assert(
+  "NaN attempts returns INVALID_INPUT",
+  t30.inputError && t30.inputError.result === "INVALID_INPUT" && t30.inputError.reason.includes("attempts")
+);
+
+// Test 31: invalid targetTime returns INVALID_INPUT
+const t31 = evaluateCompliance(bookingWindowRules, {
+  action: "create_booking",
+  targetTime: "not-a-date",
+  currentTime: "2026-03-13T12:00:00Z",
+});
+assert(
+  "invalid targetTime returns INVALID_INPUT",
+  t31.inputError && t31.inputError.result === "INVALID_INPUT" && t31.inputError.reason.includes("targetTime")
+);
+
+// Test 32: invalid currentTime returns INVALID_INPUT
+const t32 = evaluateCompliance(bookingWindowRules, {
+  action: "create_booking",
+  targetTime: "2026-03-13T17:00:00Z",
+  currentTime: "garbage",
+});
+assert(
+  "invalid currentTime returns INVALID_INPUT",
+  t32.inputError && t32.inputError.result === "INVALID_INPUT" && t32.inputError.reason.includes("currentTime")
+);
+
 console.log(`\nReference agent tests: ${passed} passed, ${failed} failed.`);
 if (failed > 0) process.exit(1);
